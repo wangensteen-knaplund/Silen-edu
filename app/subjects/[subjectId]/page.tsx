@@ -7,8 +7,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
-import Oversikt from "@/components/subjects/Oversikt";
 import { daysUntil } from "@/utils/date";
+import Oversikt from "@/components/subjects/Oversikt";
 
 const IS_PRO_FEATURE = true;
 

@@ -12,7 +12,7 @@ interface OversiktProps {
   isPro: boolean;
 }
 
-export default function Oversikt({ subjectId, initialExamDate, isPro }: OversiktProps) {
+export function Oversikt({ subjectId, initialExamDate, isPro }: OversiktProps) {
   const plannerData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
   const plannerProData = usePlannerStore((state) => state.plannerProBySubjectId[subjectId]);
   const goals = usePlannerStore((state) => state.goalsBySubjectId[subjectId] || []);
@@ -467,3 +467,5 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
     </div>
   );
 }
+
+export default Oversikt;

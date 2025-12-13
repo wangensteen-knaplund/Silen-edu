@@ -28,8 +28,7 @@ export default function PublicNotePage() {
       const { data, error } = await supabase
         .from("notes")
         .select("id, content, created_at")
-        .eq("public_id", publicId)
-        .eq("is_public", true)
+        .eq("id", publicId)
         .single();
 
       if (error || !data) {

@@ -24,6 +24,8 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
   const initialized = useSubjectsStore((state) => state.initialized);
+  const plannerLoading = usePlannerStore((state) => state.loading);
+  const plannerInitialized = usePlannerStore((state) => state.initialized);
 
   const plannerLiteData = usePlannerStore(
     (state) => state.plannerLiteBySubjectId[subjectId]
@@ -41,7 +43,11 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     return null;
   }
 
-  const isLoading = loading || !initialized;
+  const isLoading =
+    loading ||
+    !initialized ||
+    plannerLoading ||
+    !plannerInitialized;
 
   if (isLoading) {
     return (

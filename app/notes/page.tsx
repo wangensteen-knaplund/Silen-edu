@@ -28,9 +28,7 @@ export default function NotesPage() {
     subjectsLoading ||
     !subjectsInitialized;
 
-  const getTitleFromContent = (content: string, fallback?: string) => {
-    if (fallback?.trim()) return fallback;
-
+  const getTitleFromContent = (content: string) => {
     const firstLine = content
       .split(/\r?\n/)
       .map((line) => line.trim())
@@ -85,7 +83,7 @@ export default function NotesPage() {
                 className="block p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition"
               >
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {getTitleFromContent(note.content, note.title)}
+                  {getTitleFromContent(note.content)}
                 </h2>
                 {subject && (
                   <p className="text-sm text-gray-500 dark:text-gray-400">

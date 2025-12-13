@@ -21,12 +21,8 @@ CREATE TABLE IF NOT EXISTS notes (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
   content TEXT NOT NULL,
-  is_public BOOLEAN DEFAULT FALSE,
-  public_id TEXT UNIQUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Tags table
@@ -114,7 +110,6 @@ CREATE TABLE IF NOT EXISTS ai_history (
 CREATE INDEX IF NOT EXISTS idx_subjects_user_id ON subjects(user_id);
 CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id);
 CREATE INDEX IF NOT EXISTS idx_notes_subject_id ON notes(subject_id);
-CREATE INDEX IF NOT EXISTS idx_notes_public_id ON notes(public_id);
 CREATE INDEX IF NOT EXISTS idx_note_tags_note_id ON note_tags(note_id);
 CREATE INDEX IF NOT EXISTS idx_note_tags_tag_id ON note_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_study_activity_user_id ON study_activity_daily(user_id);
@@ -149,7 +144,6 @@ DROP POLICY IF EXISTS "Users can update their own subjects" ON subjects;
 DROP POLICY IF EXISTS "Users can delete their own subjects" ON subjects;
 
 DROP POLICY IF EXISTS "Users can view their own notes" ON notes;
-DROP POLICY IF EXISTS "Anyone can view public notes" ON notes;
 DROP POLICY IF EXISTS "Users can create their own notes" ON notes;
 DROP POLICY IF EXISTS "Users can update their own notes" ON notes;
 DROP POLICY IF EXISTS "Users can delete their own notes" ON notes;
@@ -204,9 +198,6 @@ CREATE POLICY "Users can view their own notes" ON notes
         AND subjects.user_id = auth.uid()
     )
   );
-
-CREATE POLICY "Anyone can view public notes" ON notes
-  FOR SELECT USING (is_public = true);
 
 CREATE POLICY "Users can create their own notes" ON notes
   FOR INSERT WITH CHECK (

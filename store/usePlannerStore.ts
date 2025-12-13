@@ -1,11 +1,24 @@
+"use client";
+
 import { create } from "zustand";
-import { PlannerLiteData, PlannerProData, Deadline, ReadingItem, Goal } from "@/types/planner";
+import {
+  PlannerLiteData,
+  PlannerProData,
+  Deadline,
+  ReadingItem,
+  Goal,
+} from "@/types/planner";
+import { Subject } from "@/types/data";
 import { nanoid } from "nanoid";
 
 interface PlannerStore {
   plannerLiteBySubjectId: Record<string, PlannerLiteData>;
   plannerProBySubjectId: Record<string, PlannerProData>;
   goalsBySubjectId: Record<string, Goal[]>;
+  loading: boolean;
+  initialized: boolean;
+  hydrateFromSubjects: (subjects: Subject[]) => void;
+  reset: () => void;
   setExamDate: (subjectId: string, date: string) => void;
   addGoal: (subjectId: string, goal: Goal) => void;
   removeGoal: (subjectId: string, goalId: string) => void;
@@ -21,6 +34,49 @@ export const usePlannerStore = create<PlannerStore>((set) => ({
   plannerLiteBySubjectId: {},
   plannerProBySubjectId: {},
   goalsBySubjectId: {},
+  loading: false,
+  initialized: false,
+  hydrateFromSubjects: (subjects) => {
+    set({ loading: true });
+    set((state) => {
+      const nextLite: Record<string, PlannerLiteData> = {};
+
+      subjects.forEach((subject) => {
+        if (subject.examDate) {
+          nextLite[subject.id] = {
+            subjectId: subject.id,
+            examDate: subject.examDate,
+          };
+        } else if (state.plannerLiteBySubjectId[subject.id]) {
+          nextLite[subject.id] = state.plannerLiteBySubjectId[subject.id];
+        }
+      });
+
+      return {
+        plannerLiteBySubjectId: nextLite,
+        plannerProBySubjectId: Object.fromEntries(
+          Object.entries(state.plannerProBySubjectId).filter(([subjectId]) =>
+            subjects.some((subject) => subject.id === subjectId)
+          )
+        ),
+        goalsBySubjectId: Object.fromEntries(
+          Object.entries(state.goalsBySubjectId).filter(([subjectId]) =>
+            subjects.some((subject) => subject.id === subjectId)
+          )
+        ),
+        loading: false,
+        initialized: true,
+      };
+    });
+  },
+  reset: () =>
+    set({
+      plannerLiteBySubjectId: {},
+      plannerProBySubjectId: {},
+      goalsBySubjectId: {},
+      loading: false,
+      initialized: false,
+    }),
   setExamDate: (subjectId, date) =>
     set((state) => ({
       plannerLiteBySubjectId: {

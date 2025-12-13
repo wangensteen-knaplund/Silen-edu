@@ -41,15 +41,13 @@ export default function NoteDetailPage() {
     );
   }
 
-  const title = note.title?.trim()
-    ? note.title
-    : (() => {
-        const firstLine = note.content
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .find((line) => line.length > 0);
-        return firstLine || "Uten tittel";
-      })();
+  const title = (() => {
+    const firstLine = note.content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0);
+    return firstLine || "Uten tittel";
+  })();
 
   return (
     <div className="max-w-3xl mx-auto py-8">

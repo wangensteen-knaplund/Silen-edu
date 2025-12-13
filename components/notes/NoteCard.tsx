@@ -5,13 +5,17 @@ import { formatDateNO } from "@/utils/date";
 
 interface NoteCardProps {
   id: string;
-  title: string;
   content: string;
   subjectName?: string;
   createdAt: string;
 }
 
-export default function NoteCard({ id, title, content, subjectName, createdAt }: NoteCardProps) {
+export default function NoteCard({ id, content, subjectName, createdAt }: NoteCardProps) {
+  const title = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0) || "Uten tittel";
+
   return (
     <Link href={`/notes/${id}`}>
       <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 cursor-pointer">

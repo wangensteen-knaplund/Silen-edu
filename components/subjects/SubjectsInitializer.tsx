@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useNotesStore } from "@/store/useNotesStore";
+import { usePlannerStore } from "@/store/usePlannerStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 
 export default function SubjectsInitializer() {
@@ -11,6 +12,8 @@ export default function SubjectsInitializer() {
   const resetSubjects = useSubjectsStore((state) => state.reset);
   const loadNotes = useNotesStore((state) => state.loadNotes);
   const resetNotes = useNotesStore((state) => state.reset);
+  const hydratePlanner = usePlannerStore((state) => state.hydrateFromSubjects);
+  const resetPlanner = usePlannerStore((state) => state.reset);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,13 +22,17 @@ export default function SubjectsInitializer() {
       if (!user) {
         resetSubjects();
         resetNotes();
+        resetPlanner();
         return;
       }
 
-      await loadSubjects(user.id);
+      const subjects = await loadSubjects(user.id);
       if (cancelled) return;
 
       await loadNotes(user.id);
+      if (cancelled) return;
+
+      hydratePlanner(subjects);
     };
 
     hydrate();
@@ -33,7 +40,15 @@ export default function SubjectsInitializer() {
     return () => {
       cancelled = true;
     };
-  }, [user, loadSubjects, loadNotes, resetSubjects, resetNotes]);
+  }, [
+    user,
+    loadSubjects,
+    loadNotes,
+    resetSubjects,
+    resetNotes,
+    hydratePlanner,
+    resetPlanner,
+  ]);
 
   return null;
 }

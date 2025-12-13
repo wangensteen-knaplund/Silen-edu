@@ -7,12 +7,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
-import dynamic from "next/dynamic";
+import Oversikt from "@/components/subjects/Oversikt";
 import { daysUntil } from "@/utils/date";
-
-const Oversikt = dynamic(() => import("@/components/subjects/Oversikt"), {
-  ssr: false,
-});
 
 const IS_PRO_FEATURE = true;
 

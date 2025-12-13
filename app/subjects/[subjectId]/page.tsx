@@ -1,33 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabaseClient";
+import Oversikt from "@/components/subjects/Oversikt";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
-import Oversikt from "@/components/subjects/Oversikt";
+import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { daysUntil } from "@/utils/date";
 
 const IS_PRO_FEATURE = true;
 
-interface Subject {
-  id: string;
-  name: string;
-  examDate?: string;
+interface SubjectDetailPageProps {
+  params: {
+    subjectId: string;
+  };
 }
 
-export default function SubjectDetailPage() {
-  const params = useParams();
-  const subjectId = params.subjectId as string;
+export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   const { user } = useAuth();
+  const subjectId = params.subjectId;
 
-  const [subject, setSubject] = useState<Subject | null>(null);
-  const [loading, setLoading] = useState(true);
+  const subjects = useSubjectsStore((state) => state.subjects);
+  const loading = useSubjectsStore((state) => state.loading);
+  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
+
   const plannerLiteData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
   const registerWorkedToday = useStudyTrackerStore((state) => state.registerWorkedToday);
 
+  const subject = subjects.find((item) => item.id === subjectId);
   const examDate = subject?.examDate || plannerLiteData?.examDate;
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
@@ -36,43 +37,12 @@ export default function SubjectDetailPage() {
     registerWorkedToday();
   }, [registerWorkedToday]);
 
+  // Ensure subjects are loaded so the detail view can resolve the current subject
   useEffect(() => {
-    if (user && subjectId) {
-      fetchSubject();
+    if (user) {
+      loadSubjects(user.id);
     }
-  }, [user, subjectId]);
-
-  const fetchSubject = async () => {
-    if (!user || !subjectId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("id, name, exam_date")
-        .eq("id", subjectId)
-        .eq("user_id", user.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching subject:", error);
-        setSubject(null);
-        return;
-      }
-
-      if (data) {
-        setSubject({
-          id: data.id,
-          name: data.name,
-          examDate: data.exam_date,
-        });
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setSubject(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, loadSubjects]);
 
   if (!user) {
     return null; // AuthProvider will redirect

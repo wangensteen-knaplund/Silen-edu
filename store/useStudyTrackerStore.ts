@@ -11,21 +11,26 @@ interface StudyTrackerStore {
   getWeeklyIntensities: () => number[];
 }
 
+// Helper function to get or create activity for a date
+function getOrCreateActivity(activities: Record<string, StudyActivityDaily>, date: string): StudyActivityDaily {
+  return activities[date] || {
+    id: `act-${date}`,
+    userId: "user-1",
+    date,
+    worked: false,
+    wroteNotes: false,
+    reviewed: false,
+    quizTaken: false,
+  };
+}
+
 export const useStudyTrackerStore = create<StudyTrackerStore>((set, get) => ({
   activities: {},
   
   registerWorkedToday: () => {
     const today = getTodayISO();
     set((state) => {
-      const existing = state.activities[today] || {
-        id: `act-${today}`,
-        userId: "user-1",
-        date: today,
-        worked: false,
-        wroteNotes: false,
-        reviewed: false,
-        quizTaken: false,
-      };
+      const existing = getOrCreateActivity(state.activities, today);
       return {
         activities: {
           ...state.activities,
@@ -41,15 +46,7 @@ export const useStudyTrackerStore = create<StudyTrackerStore>((set, get) => ({
   registerNoteEdited: () => {
     const today = getTodayISO();
     set((state) => {
-      const existing = state.activities[today] || {
-        id: `act-${today}`,
-        userId: "user-1",
-        date: today,
-        worked: false,
-        wroteNotes: false,
-        reviewed: false,
-        quizTaken: false,
-      };
+      const existing = getOrCreateActivity(state.activities, today);
       return {
         activities: {
           ...state.activities,
@@ -66,15 +63,7 @@ export const useStudyTrackerStore = create<StudyTrackerStore>((set, get) => ({
   registerQuizTaken: () => {
     const today = getTodayISO();
     set((state) => {
-      const existing = state.activities[today] || {
-        id: `act-${today}`,
-        userId: "user-1",
-        date: today,
-        worked: false,
-        wroteNotes: false,
-        reviewed: false,
-        quizTaken: false,
-      };
+      const existing = getOrCreateActivity(state.activities, today);
       return {
         activities: {
           ...state.activities,
@@ -91,15 +80,7 @@ export const useStudyTrackerStore = create<StudyTrackerStore>((set, get) => ({
   registerReviewed: () => {
     const today = getTodayISO();
     set((state) => {
-      const existing = state.activities[today] || {
-        id: `act-${today}`,
-        userId: "user-1",
-        date: today,
-        worked: false,
-        wroteNotes: false,
-        reviewed: false,
-        quizTaken: false,
-      };
+      const existing = getOrCreateActivity(state.activities, today);
       return {
         activities: {
           ...state.activities,

@@ -39,7 +39,7 @@ export function generateBasicMCQFromNotes(notes: Note[]): QuizQuestion[] {
       }
     }
 
-    // Only create question if we have at least 2 options total
+    // Only create question if we have enough wrong answers to form a meaningful quiz
     if (wrongAnswers.length >= 1) {
       const allOptions = [firstSentence, ...wrongAnswers].slice(0, 4);
       const shuffledOptions = shuffleArray(allOptions);

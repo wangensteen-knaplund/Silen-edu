@@ -7,20 +7,26 @@ import { Subject } from "@/types/data";
 interface SubjectsStore {
   subjects: Subject[];
   loading: boolean;
-  initialized: boolean;
+  hasLoaded: boolean;
+
   loadSubjects: (userId: string) => Promise<void>;
-  setSubjects: (subjects: Subject[]) => void;
+  ensureSubjectsLoaded: (userId: string) => Promise<void>;
+
   addSubject: (subject: Subject) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
   removeSubject: (id: string) => void;
 }
 
-export const useSubjectsStore = create<SubjectsStore>((set) => ({
+export const useSubjectsStore = create<SubjectsStore>((set, get) => ({
   subjects: [],
   loading: false,
-  initialized: false,
+  hasLoaded: false,
+
   loadSubjects: async (userId: string) => {
-    set({ loading: true, initialized: false });
+    // 🔒 unngå parallelle kall
+    if (get().loading) return;
+
+    set({ loading: true });
 
     const { data, error } = await supabase
       .from("subjects")
@@ -30,27 +36,46 @@ export const useSubjectsStore = create<SubjectsStore>((set) => ({
 
     if (error) {
       console.error("Error loading subjects:", error);
-      set({ subjects: [], loading: false, initialized: true });
+      set({ loading: false, hasLoaded: true });
       return;
     }
 
-    const mappedSubjects: Subject[] = (data || []).map((subject) => ({
-      id: subject.id,
-      userId: subject.user_id,
-      name: subject.name,
-      semester: subject.semester ?? undefined,
-      examDate: subject.exam_date ?? undefined,
+    const mapped: Subject[] = (data ?? []).map((s) => ({
+      id: s.id,
+      userId: s.user_id,
+      name: s.name,
+      semester: s.semester ?? undefined,
+      examDate: s.exam_date ?? undefined,
     }));
 
-    set({ subjects: mappedSubjects, loading: false, initialized: true });
+    set({
+      subjects: mapped,
+      loading: false,
+      hasLoaded: true,
+    });
   },
-  setSubjects: (subjects) => set({ subjects, initialized: true }),
+
+  // ✅ TRYGG ENTRYPOINT
+  ensureSubjectsLoaded: async (userId: string) => {
+    const { hasLoaded, loading } = get();
+    if (!hasLoaded && !loading) {
+      await get().loadSubjects(userId);
+    }
+  },
+
   addSubject: (subject) =>
-    set((state) => ({ subjects: [...state.subjects, subject] })),
+    set((state) => ({
+      subjects: [...state.subjects, subject],
+    })),
+
   updateSubject: (id, updates) =>
     set((state) => ({
-      subjects: state.subjects.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      subjects: state.subjects.map((s) =>
+        s.id === id ? { ...s, ...updates } : s
+      ),
     })),
+
   removeSubject: (id) =>
-    set((state) => ({ subjects: state.subjects.filter((s) => s.id !== id) })),
-}));
+    set((state) => ({
+      subjects: state.subjects.filter((s) => s.id !== id),
+    })

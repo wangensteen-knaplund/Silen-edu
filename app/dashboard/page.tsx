@@ -46,7 +46,8 @@ export default function DashboardPage() {
             const { count } = await supabase
               .from("notes")
               .select("*", { count: "exact", head: true })
-              .eq("subject_id", subject.id);
+              .eq("subject_id", subject.id)
+              .eq("user_id", userId);
 
             return {
               ...subject,

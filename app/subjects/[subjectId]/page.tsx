@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import Oversikt from "@/components/subjects/Oversikt";
@@ -11,15 +12,22 @@ import { daysUntil } from "@/utils/date";
 
 const IS_PRO_FEATURE = true;
 
+interface Subject {
+  id: string;
+  name: string;
+  examDate?: string;
+}
+
 export default function SubjectDetailPage() {
   const params = useParams();
   const subjectId = params.subjectId as string;
+  const { user } = useAuth();
 
-  const subjects = useSubjectsStore((state) => state.subjects);
+  const [subject, setSubject] = useState<Subject | null>(null);
+  const [loading, setLoading] = useState(true);
   const plannerLiteData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
   const registerWorkedToday = useStudyTrackerStore((state) => state.registerWorkedToday);
-  
-  const subject = subjects.find((s) => s.id === subjectId);
+
   const examDate = subject?.examDate || plannerLiteData?.examDate;
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
@@ -27,6 +35,60 @@ export default function SubjectDetailPage() {
   useEffect(() => {
     registerWorkedToday();
   }, [registerWorkedToday]);
+
+  useEffect(() => {
+    if (user && subjectId) {
+      fetchSubject();
+    }
+  }, [user, subjectId]);
+
+  const fetchSubject = async () => {
+    if (!user || !subjectId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("id, name, exam_date")
+        .eq("id", subjectId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching subject:", error);
+        setSubject(null);
+        return;
+      }
+
+      if (data) {
+        setSubject({
+          id: data.id,
+          name: data.name,
+          examDate: data.exam_date,
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setSubject(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return null; // AuthProvider will redirect
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">Laster...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!subject) {
     return (

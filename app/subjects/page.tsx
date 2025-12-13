@@ -2,11 +2,60 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 import SubjectCard from "@/components/SubjectCard";
-import { useSubjectsStore } from "@/store/useSubjectsStore";
+
+interface Subject {
+  id: string;
+  name: string;
+  examDate?: string;
+}
 
 export default function SubjectsPage() {
-  const subjects = useSubjectsStore((state) => state.subjects);
+  const { user } = useAuth();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchSubjects();
+    }
+  }, [user]);
+
+  const fetchSubjects = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("id, name, exam_date")
+        .eq("user_id", user.id)
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching subjects:", error);
+        return;
+      }
+
+      if (data) {
+        const mappedSubjects = data.map((subject: any) => ({
+          id: subject.id,
+          name: subject.name,
+          examDate: subject.exam_date,
+        }));
+        setSubjects(mappedSubjects);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return null; // AuthProvider will redirect
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -16,7 +65,11 @@ export default function SubjectsPage() {
             Mine fag
           </h1>
 
-          {subjects.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+              <p className="text-gray-600 dark:text-gray-400">Laster...</p>
+            </div>
+          ) : subjects.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
               <p className="text-gray-600 dark:text-gray-400">
                 Du har ingen fag ennå. Fag vil bli lagt til her.

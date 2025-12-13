@@ -1,14 +1,65 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import StudyHeatmapStrip from "@/components/dashboard/StudyHeatmapStrip";
 
+interface Subject {
+  id: string;
+  name: string;
+  examDate?: string;
+}
+
 export default function Dashboard() {
-  const subjects = useSubjectsStore((state) => state.subjects);
+  const { user } = useAuth();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
   const getWeeklyIntensities = useStudyTrackerStore((state) => state.getWeeklyIntensities);
   const intensities = getWeeklyIntensities();
+
+  useEffect(() => {
+    if (user) {
+      fetchSubjects();
+    }
+  }, [user]);
+
+  const fetchSubjects = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("id, name, exam_date")
+        .eq("user_id", user.id)
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching subjects:", error);
+        return;
+      }
+
+      if (data) {
+        const mappedSubjects = data.map((subject: any) => ({
+          id: subject.id,
+          name: subject.name,
+          examDate: subject.exam_date,
+        }));
+        setSubjects(mappedSubjects);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return null; // AuthProvider will redirect
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -17,7 +68,7 @@ export default function Dashboard() {
           {/* Greeting Section */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Velkommen, bruker. Hva vil du gjøre i dag?
+              Velkommen, {user.email?.split("@")[0]}. Hva vil du gjøre i dag?
             </h1>
           </div>
 
@@ -42,7 +93,9 @@ export default function Dashboard() {
                 Se alle →
               </Link>
             </div>
-            {subjects.length === 0 ? (
+            {loading ? (
+              <p className="text-gray-600 dark:text-gray-400">Laster...</p>
+            ) : subjects.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400">
                 Ingen fag lagt til ennå.
               </p>

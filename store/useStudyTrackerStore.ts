@@ -1,68 +1,101 @@
 import { create } from "zustand";
 import { StudyActivityDaily, calculateIntensityForDay } from "@/models/studyActivity";
-import { getCurrentWeekRange } from "@/utils/date";
+import { getCurrentWeekRange, getTodayISO } from "@/utils/date";
 
 interface StudyTrackerStore {
-  activities: StudyActivityDaily[];
-  setActivities: (activities: StudyActivityDaily[]) => void;
-  addActivity: (activity: StudyActivityDaily) => void;
+  activities: Record<string, StudyActivityDaily>; // keyed by date
+  registerWorkedToday: () => void;
+  registerNoteEdited: () => void;
+  registerQuizTaken: () => void;
+  registerReviewed: () => void;
   getWeeklyIntensities: () => number[];
 }
 
+// Helper function to get or create activity for a date
+function getOrCreateActivity(activities: Record<string, StudyActivityDaily>, date: string): StudyActivityDaily {
+  return activities[date] || {
+    id: `act-${date}`,
+    userId: "user-1",
+    date,
+    worked: false,
+    wroteNotes: false,
+    reviewed: false,
+    quizTaken: false,
+  };
+}
+
 export const useStudyTrackerStore = create<StudyTrackerStore>((set, get) => ({
-  activities: [
-    // Placeholder data for current week
-    {
-      id: "act-1",
-      userId: "user-1",
-      date: "2024-12-09",
-      worked: false,
-      wroteNotes: false,
-      reviewed: false,
-      quizTaken: false,
-    },
-    {
-      id: "act-2",
-      userId: "user-1",
-      date: "2024-12-10",
-      worked: true,
-      wroteNotes: false,
-      reviewed: false,
-      quizTaken: false,
-    },
-    {
-      id: "act-3",
-      userId: "user-1",
-      date: "2024-12-11",
-      worked: true,
-      wroteNotes: true,
-      reviewed: false,
-      quizTaken: false,
-    },
-    {
-      id: "act-4",
-      userId: "user-1",
-      date: "2024-12-12",
-      worked: true,
-      wroteNotes: true,
-      reviewed: true,
-      quizTaken: false,
-    },
-    {
-      id: "act-5",
-      userId: "user-1",
-      date: "2024-12-13",
-      worked: true,
-      wroteNotes: false,
-      reviewed: false,
-      quizTaken: false,
-    },
-  ],
-  setActivities: (activities) => set({ activities }),
-  addActivity: (activity) =>
-    set((state) => ({ activities: [...state.activities, activity] })),
+  activities: {},
+  
+  registerWorkedToday: () => {
+    const today = getTodayISO();
+    set((state) => {
+      const existing = getOrCreateActivity(state.activities, today);
+      return {
+        activities: {
+          ...state.activities,
+          [today]: {
+            ...existing,
+            worked: true,
+          },
+        },
+      };
+    });
+  },
+  
+  registerNoteEdited: () => {
+    const today = getTodayISO();
+    set((state) => {
+      const existing = getOrCreateActivity(state.activities, today);
+      return {
+        activities: {
+          ...state.activities,
+          [today]: {
+            ...existing,
+            wroteNotes: true,
+            worked: true, // Also mark as worked
+          },
+        },
+      };
+    });
+  },
+  
+  registerQuizTaken: () => {
+    const today = getTodayISO();
+    set((state) => {
+      const existing = getOrCreateActivity(state.activities, today);
+      return {
+        activities: {
+          ...state.activities,
+          [today]: {
+            ...existing,
+            quizTaken: true,
+            worked: true, // Also mark as worked
+          },
+        },
+      };
+    });
+  },
+  
+  registerReviewed: () => {
+    const today = getTodayISO();
+    set((state) => {
+      const existing = getOrCreateActivity(state.activities, today);
+      return {
+        activities: {
+          ...state.activities,
+          [today]: {
+            ...existing,
+            reviewed: true,
+            worked: true, // Also mark as worked
+          },
+        },
+      };
+    });
+  },
+  
   getWeeklyIntensities: () => {
-    const { start, end } = getCurrentWeekRange();
+    const { start } = getCurrentWeekRange();
     const activities = get().activities;
     
     // Create array of 7 days (Monday to Sunday)
@@ -74,7 +107,7 @@ export const useStudyTrackerStore = create<StudyTrackerStore>((set, get) => ({
       date.setDate(startDate.getDate() + i);
       const dateStr = date.toISOString().split("T")[0];
       
-      const activity = activities.find((a) => a.date === dateStr);
+      const activity = activities[dateStr];
       if (activity) {
         intensities.push(calculateIntensityForDay(activity));
       } else {

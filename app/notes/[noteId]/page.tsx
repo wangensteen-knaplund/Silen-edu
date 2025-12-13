@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import { generateSummaryPlaceholder } from "@/lib/ai/summaries";
 
 export default function NoteDetailPage() {
@@ -15,6 +16,7 @@ export default function NoteDetailPage() {
   const notes = useNotesStore((state) => state.notes);
   const updateNote = useNotesStore((state) => state.updateNote);
   const subjects = useSubjectsStore((state) => state.subjects);
+  const registerNoteEdited = useStudyTrackerStore((state) => state.registerNoteEdited);
 
   const note = notes.find((n) => n.id === noteId);
 
@@ -60,6 +62,9 @@ export default function NoteDetailPage() {
       content: content.trim(),
       updatedAt: new Date().toISOString(),
     });
+
+    // Register that a note was edited
+    registerNoteEdited();
 
     alert("Notat oppdatert!");
     router.push("/notes");

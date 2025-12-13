@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuizStore } from "@/store/useQuizStore";
+import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 
 export default function QuizSessionPage() {
   const params = useParams();
@@ -12,11 +13,13 @@ export default function QuizSessionPage() {
 
   const getSessionById = useQuizStore((state) => state.getSessionById);
   const session = getSessionById(sessionId);
+  const registerQuizTaken = useStudyTrackerStore((state) => state.registerQuizTaken);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
 
   if (!session) {
     return (
@@ -53,6 +56,11 @@ export default function QuizSessionPage() {
 
     if (isLastQuestion) {
       setShowResult(true);
+      // Register quiz completion only once
+      if (!quizCompleted) {
+        registerQuizTaken();
+        setQuizCompleted(true);
+      }
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);

@@ -8,14 +8,14 @@ export interface Deadline {
   subjectId: string;
   title: string;
   dueDate: string; // ISO date string
-  type: string; // e.g., "assignment", "exam", "presentation"
+  type: "innlevering" | "prøve" | "prosjekt";
 }
 
 export interface ReadingItem {
   id: string;
   subjectId: string;
   title: string;
-  progress: number; // 0-100
+  completed: boolean;
 }
 
 export interface PlannerProData {

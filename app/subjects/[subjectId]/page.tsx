@@ -5,11 +5,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import PlannerLite from "@/components/subjects/PlannerLite";
 import PlannerPro from "@/components/subjects/PlannerPro";
 import { daysUntil } from "@/utils/date";
 
-const IS_PRO_FEATURE = false;
+const IS_PRO_FEATURE = true;
 
 export default function SubjectDetailPage() {
   const params = useParams();
@@ -17,10 +18,16 @@ export default function SubjectDetailPage() {
 
   const subjects = useSubjectsStore((state) => state.subjects);
   const plannerLiteData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
+  const registerWorkedToday = useStudyTrackerStore((state) => state.registerWorkedToday);
   
   const subject = subjects.find((s) => s.id === subjectId);
   const examDate = subject?.examDate || plannerLiteData?.examDate;
   const daysToExam = examDate ? daysUntil(examDate) : null;
+
+  // Register that user worked today when they visit a subject page
+  useEffect(() => {
+    registerWorkedToday();
+  }, [registerWorkedToday]);
 
   if (!subject) {
     return (

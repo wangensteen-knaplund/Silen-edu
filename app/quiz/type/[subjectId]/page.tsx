@@ -4,8 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useQuizStore } from "@/store/useQuizStore";
+import { useNotesStore } from "@/store/useNotesStore";
 import QuizTypeCard from "@/components/quiz/QuizTypeCard";
-import { nanoid } from "nanoid";
+import { generateBasicMCQFromNotes } from "@/utils/quizGenerator";
 
 export default function QuizTypePage() {
   const params = useParams();
@@ -13,7 +14,8 @@ export default function QuizTypePage() {
   const subjectId = params.subjectId as string;
 
   const subjects = useSubjectsStore((state) => state.subjects);
-  const createSession = useQuizStore((state) => state.createSession);
+  const createQuizSession = useQuizStore((state) => state.createQuizSession);
+  const getNotesBySubject = useNotesStore((state) => state.getNotesBySubject);
 
   const subject = subjects.find((s) => s.id === subjectId);
 
@@ -37,33 +39,23 @@ export default function QuizTypePage() {
       router.push(`/quiz/flashcards/${subjectId}`);
     } else if (type === "mcq_ai" || type === "reflection_ai") {
       alert("Denne funksjonen er ikke implementert ennå (Pro/AI)");
-    } else {
-      // Create a basic MCQ session
-      const sessionId = nanoid();
-      const session = {
-        id: sessionId,
-        subjectId,
-        userId: "user-1",
-        type,
-        questions: [
-          {
-            id: "q1",
-            type: "mcq_basic" as const,
-            question: "Hva er 2 + 2?",
-            options: ["3", "4", "5", "6"],
-            correctAnswer: "4",
-          },
-          {
-            id: "q2",
-            type: "mcq_basic" as const,
-            question: "Hva er hovedstaden i Norge?",
-            options: ["Bergen", "Oslo", "Trondheim", "Stavanger"],
-            correctAnswer: "Oslo",
-          },
-        ],
-        startedAt: new Date().toISOString(),
-      };
-      createSession(session);
+    } else if (type === "mcq_basic") {
+      // Generate MCQ from notes
+      const notes = getNotesBySubject(subjectId);
+      
+      if (notes.length === 0) {
+        alert("Du må ha minst ett notat for dette faget for å generere quiz");
+        return;
+      }
+
+      const questions = generateBasicMCQFromNotes(notes);
+      
+      if (questions.length === 0) {
+        alert("Kunne ikke generere spørsmål fra notatene dine. Sjekk at notatene har innhold.");
+        return;
+      }
+
+      const sessionId = createQuizSession(subjectId, "mcq_basic", questions);
       router.push(`/quiz/session/${sessionId}`);
     }
   };
@@ -95,7 +87,7 @@ export default function QuizTypePage() {
             />
             <QuizTypeCard
               title="Basic Multiple Choice"
-              description="Test deg selv med flervalgsspørsmål"
+              description="Test deg selv med flervalgsspørsmål generert fra notatene dine"
               isFree={true}
               isPro={false}
               isAI={false}

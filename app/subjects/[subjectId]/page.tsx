@@ -23,6 +23,9 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
 
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
+  const ensureSubjectsLoaded = useSubjectsStore(
+    (state) => state.ensureSubjectsLoaded
+  );
 
   const plannerLiteData = usePlannerStore(
     (state) => state.plannerLiteBySubjectId[subjectId]
@@ -32,17 +35,24 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     (state) => state.registerWorkedToday
   );
 
+  // Sørg for at fag lastes
+  useEffect(() => {
+    if (user) {
+      ensureSubjectsLoaded(user.id);
+    }
+  }, [user, ensureSubjectsLoaded]);
+
   // Marker studiedag
   useEffect(() => {
     registerWorkedToday();
   }, [registerWorkedToday]);
 
-  // Ikke rendér noe før auth er klar
+  // Vent på auth
   if (!user) {
     return null;
   }
 
-  // ⏳ Vent eksplisitt på at subjects faktisk finnes
+  // Vent på data
   if (loading || subjects.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -101,7 +111,6 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
             )}
           </div>
 
-          {/* Oversikt */}
           <div className="mb-6">
             <Oversikt
               subjectId={subjectId}
@@ -110,7 +119,6 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
             />
           </div>
 
-          {/* Handlinger */}
           <div className="flex gap-4 mb-6">
             <Link
               href={`/notes?subjectId=${subjectId}`}

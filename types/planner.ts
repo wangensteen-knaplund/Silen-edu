@@ -14,7 +14,7 @@ export interface Deadline {
 export interface ReadingItem {
   id: string;
   subjectId: string;
-  title: string;
+  text: string;
   completed: boolean;
 }
 
@@ -23,4 +23,10 @@ export interface PlannerProData {
   examDate: string;
   deadlines: Deadline[];
   readingItems: ReadingItem[];
+}
+
+export interface Goal {
+  id: string;
+  subjectId: string;
+  text: string;
 }

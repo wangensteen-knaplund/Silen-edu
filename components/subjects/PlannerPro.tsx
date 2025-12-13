@@ -63,7 +63,7 @@ export default function PlannerPro({ subjectId, initialExamDate }: PlannerProPro
     const newItem: ReadingItem = {
       id: nanoid(),
       subjectId,
-      title: readingTitle.trim(),
+      text: readingTitle.trim(),
       completed: false,
     };
 
@@ -262,7 +262,7 @@ export default function PlannerPro({ subjectId, initialExamDate }: PlannerProPro
                   className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <p className={`flex-1 text-sm text-gray-900 dark:text-white ${item.completed ? "line-through opacity-60" : ""}`}>
-                  {item.title}
+                  {item.text}
                 </p>
                 <button
                   onClick={() => removeReadingItem(subjectId, item.id)}

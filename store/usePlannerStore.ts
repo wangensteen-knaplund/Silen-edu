@@ -18,16 +18,8 @@ interface PlannerStore {
 }
 
 export const usePlannerStore = create<PlannerStore>((set) => ({
-  plannerLiteBySubjectId: {
-    // Placeholder data
-    "1": {
-      subjectId: "1",
-      examDate: "2024-12-20",
-    },
-  },
-  plannerProBySubjectId: {
-    // Placeholder data (empty for now as it's a Pro feature)
-  },
+  plannerLiteBySubjectId: {},
+  plannerProBySubjectId: {},
   goalsBySubjectId: {},
   setExamDate: (subjectId, date) =>
     set((state) => ({

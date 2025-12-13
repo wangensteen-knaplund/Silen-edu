@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabaseClient";
 import { useQuizStore } from "@/store/useQuizStore";
 import { useNotesStore } from "@/store/useNotesStore";
 import QuizTypeCard from "@/components/quiz/QuizTypeCard";
 import { generateBasicMCQFromNotes } from "@/utils/quizGenerator";
-
-interface Subject {
-  id: string;
-  name: string;
-}
+import { useSubjectsStore } from "@/store/useSubjectsStore";
 
 export default function QuizTypePage() {
   const params = useParams();
@@ -21,53 +15,27 @@ export default function QuizTypePage() {
   const subjectId = params.subjectId as string;
   const { user } = useAuth();
 
-  const [subject, setSubject] = useState<Subject | null>(null);
-  const [loading, setLoading] = useState(true);
   const createQuizSession = useQuizStore((state) => state.createQuizSession);
-  const getNotesBySubject = useNotesStore((state) => state.getNotesBySubject);
+  const getNotesBySubject = useNotesStore((state) => state.getBySubject);
+  const notesInitialized = useNotesStore((state) => state.initialized);
+  const notesLoading = useNotesStore((state) => state.loading);
 
-  useEffect(() => {
-    if (user && subjectId) {
-      fetchSubject();
-    }
-  }, [user, subjectId]);
-
-  const fetchSubject = async () => {
-    if (!user || !subjectId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("id, name")
-        .eq("id", subjectId)
-        .eq("user_id", user.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching subject:", error);
-        setSubject(null);
-        return;
-      }
-
-      if (data) {
-        setSubject({
-          id: data.id,
-          name: data.name,
-        });
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setSubject(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const subjectsInitialized = useSubjectsStore((state) => state.initialized);
+  const subjectsLoading = useSubjectsStore((state) => state.loading);
+  const getSubjectById = useSubjectsStore((state) => state.getById);
+  const subject = getSubjectById(subjectId) || null;
 
   if (!user) {
     return null; // AuthProvider will redirect
   }
 
-  if (loading) {
+  const isLoading =
+    notesLoading ||
+    !notesInitialized ||
+    subjectsLoading ||
+    !subjectsInitialized;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

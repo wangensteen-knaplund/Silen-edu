@@ -26,20 +26,28 @@ export default function NewNotePage() {
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const deriveTitleFromContent = (value: string) => {
+    const firstLine = value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0);
+
+    return firstLine || "Uten tittel";
+  };
+
   const handleSave = async () => {
     if (!user) {
       alert("Du må være innlogget for å lagre notater");
       return;
     }
 
-    if (!subjectId || !content.trim()) {
+    const trimmedContent = content.trim();
+    const noteTitle = title.trim() || deriveTitleFromContent(trimmedContent);
+
+    if (!subjectId || !trimmedContent) {
       alert("Vennligst fyll ut fag og innhold");
       return;
     }
-
-    const combinedContent = title.trim()
-      ? `${title.trim()}\n\n${content.trim()}`
-      : content.trim();
 
     setSaving(true);
 
@@ -50,7 +58,8 @@ export default function NewNotePage() {
           {
             user_id: user.id,
             subject_id: subjectId,
-            content: combinedContent,
+            title: noteTitle,
+            content: trimmedContent,
           },
         ])
         .select()
@@ -64,11 +73,14 @@ export default function NewNotePage() {
 
       const newNote = {
         id: data.id,
+        title: data.title,
         userId: data.user_id,
         subjectId: data.subject_id,
         content: data.content,
         createdAt: data.created_at,
         updatedAt: data.updated_at ?? undefined,
+        isPublic: Boolean(data.is_public),
+        publicId: data.public_id ?? null,
       };
 
       addNote(newNote);

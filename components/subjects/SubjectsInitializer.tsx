@@ -13,13 +13,26 @@ export default function SubjectsInitializer() {
   const resetNotes = useNotesStore((state) => state.reset);
 
   useEffect(() => {
-    if (user) {
-      loadSubjects(user.id);
-      loadNotes(user.id);
-    } else {
-      resetSubjects();
-      resetNotes();
-    }
+    let cancelled = false;
+
+    const hydrate = async () => {
+      if (!user) {
+        resetSubjects();
+        resetNotes();
+        return;
+      }
+
+      await loadSubjects(user.id);
+      if (cancelled) return;
+
+      await loadNotes(user.id);
+    };
+
+    hydrate();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, loadSubjects, loadNotes, resetSubjects, resetNotes]);
 
   return null;

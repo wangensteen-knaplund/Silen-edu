@@ -27,7 +27,9 @@ export const useNotesStore = create<NotesStore>((set, get) => {
 
     const { data, error } = await supabase
       .from("notes")
-      .select("id, user_id, subject_id, content, created_at, updated_at")
+      .select(
+        "id, user_id, subject_id, title, content, is_public, public_id, created_at, updated_at"
+      )
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
@@ -41,9 +43,12 @@ export const useNotesStore = create<NotesStore>((set, get) => {
       id: n.id,
       userId: n.user_id,
       subjectId: n.subject_id,
+      title: n.title,
       content: n.content,
       createdAt: n.created_at,
       updatedAt: n.updated_at ?? undefined,
+      isPublic: Boolean(n.is_public),
+      publicId: n.public_id ?? null,
     }));
 
     set({ notes: mappedNotes, loading: false, initialized: true });

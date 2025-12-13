@@ -17,6 +17,7 @@ export default function SubjectsPage() {
   const addSubjectToStore = useSubjectsStore((state) => state.addSubject);
   const notes = useNotesStore((state) => state.notes);
   const notesInitialized = useNotesStore((state) => state.initialized);
+  const notesLoading = useNotesStore((state) => state.loading);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
@@ -64,6 +65,7 @@ export default function SubjectsPage() {
           name: data.name,
           semester: data.semester ?? undefined,
           examDate: data.exam_date ?? undefined,
+          createdAt: data.created_at,
         };
         addSubjectToStore(newSubject);
 
@@ -84,7 +86,11 @@ export default function SubjectsPage() {
     return null; // AuthProvider will redirect
   }
 
-  const isLoading = loading || !initialized;
+  const isLoading =
+    loading ||
+    notesLoading ||
+    !initialized ||
+    !notesInitialized;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

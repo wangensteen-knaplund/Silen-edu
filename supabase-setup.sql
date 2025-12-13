@@ -195,13 +195,29 @@ CREATE POLICY "Users can delete their own subjects" ON subjects
 
 -- Notes policies
 CREATE POLICY "Users can view their own notes" ON notes
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT USING (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM subjects
+      WHERE subjects.id = notes.subject_id
+        AND subjects.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Anyone can view public notes" ON notes
   FOR SELECT USING (is_public = true);
 
 CREATE POLICY "Users can create their own notes" ON notes
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM subjects
+      WHERE subjects.id = notes.subject_id
+        AND subjects.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can update their own notes" ON notes
   FOR UPDATE USING (auth.uid() = user_id);

@@ -12,8 +12,11 @@ export default function SubjectsPage() {
   const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
+  const hasLoaded = useSubjectsStore((state) => state.hasLoaded);
   const addSubjectToStore = useSubjectsStore((state) => state.addSubject);
-  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
+  const ensureSubjectsLoaded = useSubjectsStore(
+    (state) => state.ensureSubjectsLoaded
+  );
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
@@ -23,9 +26,9 @@ export default function SubjectsPage() {
 
   useEffect(() => {
     if (user) {
-      loadSubjects(user.id);
+      ensureSubjectsLoaded(user.id);
     }
-  }, [user, loadSubjects]);
+  }, [user, ensureSubjectsLoaded]);
 
   const handleAddSubject = async () => {
     if (!newSubjectName.trim()) {
@@ -61,7 +64,6 @@ export default function SubjectsPage() {
       }
 
       if (data) {
-        // Add to local state
         const newSubject: Subject = {
           id: data.id,
           userId: data.user_id,
@@ -71,7 +73,6 @@ export default function SubjectsPage() {
         };
         addSubjectToStore(newSubject);
 
-        // Reset form
         setNewSubjectName("");
         setNewSubjectSemester("");
         setNewSubjectExamDate("");
@@ -88,6 +89,8 @@ export default function SubjectsPage() {
   if (!user) {
     return null; // AuthProvider will redirect
   }
+
+  const isLoading = loading || !hasLoaded;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -174,7 +177,7 @@ export default function SubjectsPage() {
             </div>
           )}
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
               <p className="text-gray-600 dark:text-gray-400">Laster...</p>
             </div>

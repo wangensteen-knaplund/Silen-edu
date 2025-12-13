@@ -11,19 +11,26 @@ export default function Dashboard() {
   const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
-  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
-  const getWeeklyIntensities = useStudyTrackerStore((state) => state.getWeeklyIntensities);
+  const hasLoaded = useSubjectsStore((state) => state.hasLoaded);
+  const ensureSubjectsLoaded = useSubjectsStore(
+    (state) => state.ensureSubjectsLoaded
+  );
+  const getWeeklyIntensities = useStudyTrackerStore(
+    (state) => state.getWeeklyIntensities
+  );
   const intensities = getWeeklyIntensities();
 
   useEffect(() => {
     if (user) {
-      loadSubjects(user.id);
+      ensureSubjectsLoaded(user.id);
     }
-  }, [user, loadSubjects]);
+  }, [user, ensureSubjectsLoaded]);
 
   if (!user) {
     return null; // AuthProvider will redirect
   }
+
+  const isLoading = loading || !hasLoaded;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -57,7 +64,7 @@ export default function Dashboard() {
                 Se alle →
               </Link>
             </div>
-            {loading ? (
+            {isLoading ? (
               <p className="text-gray-600 dark:text-gray-400">Laster...</p>
             ) : subjects.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400">

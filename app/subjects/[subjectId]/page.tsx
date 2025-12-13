@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import Oversikt from "@/components/subjects/Oversikt";
@@ -23,6 +23,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
 
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
+  const hasLoaded = useSubjectsStore((state) => state.hasLoaded);
   const ensureSubjectsLoaded = useSubjectsStore(
     (state) => state.ensureSubjectsLoaded
   );
@@ -35,25 +36,23 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     (state) => state.registerWorkedToday
   );
 
-  // Sørg for at fag lastes
   useEffect(() => {
     if (user) {
       ensureSubjectsLoaded(user.id);
     }
   }, [user, ensureSubjectsLoaded]);
 
-  // Marker studiedag
   useEffect(() => {
     registerWorkedToday();
   }, [registerWorkedToday]);
 
-  // Vent på auth
   if (!user) {
     return null;
   }
 
-  // Vent på data
-  if (loading || subjects.length === 0) {
+  const isLoading = loading || !hasLoaded;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto py-12 text-center">
@@ -63,7 +62,10 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     );
   }
 
-  const subject = subjects.find((s) => s.id === subjectId);
+  const subject = useMemo(
+    () => subjects.find((s) => s.id === subjectId),
+    [subjects, subjectId]
+  );
 
   if (!subject) {
     return (

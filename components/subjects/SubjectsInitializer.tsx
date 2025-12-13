@@ -6,16 +6,18 @@ import { useSubjectsStore } from "@/store/useSubjectsStore";
 
 export default function SubjectsInitializer() {
   const { user } = useAuth();
-  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
-  const setSubjects = useSubjectsStore((state) => state.setSubjects);
+  const ensureSubjectsLoaded = useSubjectsStore(
+    (state) => state.ensureSubjectsLoaded
+  );
+  const resetSubjects = useSubjectsStore((state) => state.reset);
 
   useEffect(() => {
     if (user) {
-      loadSubjects(user.id);
+      ensureSubjectsLoaded(user.id);
     } else {
-      setSubjects([]);
+      resetSubjects();
     }
-  }, [user, loadSubjects, setSubjects]);
+  }, [user, ensureSubjectsLoaded, resetSubjects]);
 
   return null;
 }

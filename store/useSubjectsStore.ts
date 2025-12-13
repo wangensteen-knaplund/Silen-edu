@@ -8,24 +8,22 @@ interface SubjectsStore {
   subjects: Subject[];
   loading: boolean;
   hasLoaded: boolean;
+  lastLoadedUserId: string | null;
 
-  loadSubjects: (userId: string) => Promise<void>;
-  ensureSubjectsLoaded: (userId: string) => Promise<void>;
+  loadSubjects: (userId: string, options?: { force?: boolean }) => Promise<Subject[]>;
+  ensureSubjectsLoaded: (userId: string) => Promise<Subject[]>;
+  setSubjects: (subjects: Subject[]) => void;
+  reset: () => void;
 
   addSubject: (subject: Subject) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
   removeSubject: (id: string) => void;
 }
 
-export const useSubjectsStore = create<SubjectsStore>((set, get) => ({
-  subjects: [],
-  loading: false,
-  hasLoaded: false,
+export const useSubjectsStore = create<SubjectsStore>((set, get) => {
+  let loadPromise: Promise<Subject[]> | null = null;
 
-  loadSubjects: async (userId: string) => {
-    // 🔒 unngå parallelle kall
-    if (get().loading) return;
-
+  const fetchSubjects = async (userId: string): Promise<Subject[]> => {
     set({ loading: true });
 
     const { data, error } = await supabase
@@ -36,8 +34,8 @@ export const useSubjectsStore = create<SubjectsStore>((set, get) => ({
 
     if (error) {
       console.error("Error loading subjects:", error);
-      set({ loading: false, hasLoaded: true });
-      return;
+      set({ loading: false, hasLoaded: true, lastLoadedUserId: userId });
+      return [];
     }
 
     const mapped: Subject[] = (data ?? []).map((s) => ({
@@ -52,30 +50,95 @@ export const useSubjectsStore = create<SubjectsStore>((set, get) => ({
       subjects: mapped,
       loading: false,
       hasLoaded: true,
+      lastLoadedUserId: userId,
     });
-  },
 
-  // ✅ TRYGG ENTRYPOINT
-  ensureSubjectsLoaded: async (userId: string) => {
-    const { hasLoaded, loading } = get();
-    if (!hasLoaded && !loading) {
-      await get().loadSubjects(userId);
+    return mapped;
+  };
+
+  const loadSubjects = async (
+    userId: string,
+    options?: { force?: boolean }
+  ): Promise<Subject[]> => {
+    if (!userId) {
+      set({ subjects: [], loading: false, hasLoaded: false, lastLoadedUserId: null });
+      return [];
     }
-  },
 
-  addSubject: (subject) =>
-    set((state) => ({
-      subjects: [...state.subjects, subject],
-    })),
+    const { lastLoadedUserId, hasLoaded } = get();
 
-  updateSubject: (id, updates) =>
-    set((state) => ({
-      subjects: state.subjects.map((s) =>
-        s.id === id ? { ...s, ...updates } : s
-      ),
-    })),
+    if (!options?.force && hasLoaded && lastLoadedUserId === userId) {
+      return get().subjects;
+    }
 
-  removeSubject: (id) =>
-    set((state) => ({
-      subjects: state.subjects.filter((s) => s.id !== id),
-    })
+    if (loadPromise && !options?.force) {
+      return loadPromise;
+    }
+
+    loadPromise = fetchSubjects(userId);
+    const result = await loadPromise;
+    loadPromise = null;
+    return result;
+  };
+
+  const ensureSubjectsLoaded = async (userId: string): Promise<Subject[]> => {
+    if (!userId) {
+      return [];
+    }
+
+    const { hasLoaded, lastLoadedUserId } = get();
+    if (hasLoaded && lastLoadedUserId === userId) {
+      return get().subjects;
+    }
+
+    return loadSubjects(userId);
+  };
+
+  return {
+    subjects: [],
+    loading: false,
+    hasLoaded: false,
+    lastLoadedUserId: null,
+
+    loadSubjects,
+    ensureSubjectsLoaded,
+
+    setSubjects: (subjects) =>
+      set((state) => ({
+        subjects,
+        loading: false,
+        hasLoaded: subjects.length > 0 ? true : false,
+        lastLoadedUserId:
+          subjects.length > 0
+            ? subjects[0].userId
+            : state.lastLoadedUserId,
+      })),
+
+    reset: () =>
+      set({
+        subjects: [],
+        loading: false,
+        hasLoaded: false,
+        lastLoadedUserId: null,
+      }),
+
+    addSubject: (subject) =>
+      set((state) => ({
+        subjects: [...state.subjects, subject],
+        hasLoaded: true,
+        lastLoadedUserId: subject.userId,
+      })),
+
+    updateSubject: (id, updates) =>
+      set((state) => ({
+        subjects: state.subjects.map((s) =>
+          s.id === id ? { ...s, ...updates } : s
+        ),
+      })),
+
+    removeSubject: (id) =>
+      set((state) => ({
+        subjects: state.subjects.filter((s) => s.id !== id),
+      })),
+  };
+});

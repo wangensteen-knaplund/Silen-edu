@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import SubjectCard from "@/components/SubjectCard";
 import { supabase } from "@/lib/supabaseClient";
@@ -15,27 +16,15 @@ interface Subject {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      router.push("/auth/login");
-      return;
+    if (user) {
+      fetchSubjects(user.id);
     }
-
-    setUser(user);
-    fetchSubjects(user.id);
-  };
+  }, [user]);
 
   const fetchSubjects = async (userId: string) => {
     try {
@@ -74,6 +63,10 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
+  if (!user) {
+    return null; // AuthProvider will redirect
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

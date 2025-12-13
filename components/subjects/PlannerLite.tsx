@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { daysUntil, formatDateNO } from "@/utils/date";
+import { usePlannerStore } from "@/store/usePlannerStore";
 
 interface PlannerLiteProps {
   subjectId: string;
@@ -9,14 +10,33 @@ interface PlannerLiteProps {
 }
 
 export default function PlannerLite({ subjectId, initialExamDate }: PlannerLiteProps) {
-  const [examDate, setExamDate] = useState(initialExamDate || "");
+  const plannerData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
+  const setExamDate = usePlannerStore((state) => state.setExamDate);
+  
   const [isEditing, setIsEditing] = useState(false);
+  const [tempExamDate, setTempExamDate] = useState("");
 
+  useEffect(() => {
+    // Initialize with data from store or initial prop
+    if (plannerData?.examDate) {
+      setTempExamDate(plannerData.examDate);
+    } else if (initialExamDate) {
+      setTempExamDate(initialExamDate);
+    }
+  }, [plannerData?.examDate, initialExamDate]);
+
+  const examDate = plannerData?.examDate || initialExamDate || "";
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
   const handleSave = () => {
-    // Placeholder - will be connected to store/Supabase later
-    console.log("Saving exam date:", examDate, "for subject:", subjectId);
+    if (tempExamDate) {
+      setExamDate(subjectId, tempExamDate);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setTempExamDate(examDate);
     setIsEditing(false);
   };
 
@@ -42,17 +62,25 @@ export default function PlannerLite({ subjectId, initialExamDate }: PlannerLiteP
             </label>
             <input
               type="date"
-              value={examDate}
-              onChange={(e) => setExamDate(e.target.value)}
+              value={tempExamDate}
+              onChange={(e) => setTempExamDate(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
-          <button
-            onClick={handleSave}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Lagre
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Lagre
+            </button>
+            <button
+              onClick={handleCancel}
+              className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+            >
+              Avbryt
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

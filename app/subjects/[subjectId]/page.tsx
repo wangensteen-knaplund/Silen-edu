@@ -9,7 +9,7 @@ import PlannerLite from "@/components/subjects/PlannerLite";
 import PlannerPro from "@/components/subjects/PlannerPro";
 import { daysUntil } from "@/utils/date";
 
-const IS_PRO_FEATURE = false;
+const IS_PRO_FEATURE = true;
 
 export default function SubjectDetailPage() {
   const params = useParams();

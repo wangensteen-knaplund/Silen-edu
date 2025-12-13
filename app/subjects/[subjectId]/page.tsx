@@ -23,58 +23,56 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
 
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
-  const initialized = useSubjectsStore((state) => state.initialized);
-  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
 
-  const plannerLiteData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
-  const registerWorkedToday = useStudyTrackerStore((state) => state.registerWorkedToday);
+  const plannerLiteData = usePlannerStore(
+    (state) => state.plannerLiteBySubjectId[subjectId]
+  );
 
-  const subject = subjects.find((item) => item.id === subjectId);
-  const examDate = subject?.examDate || plannerLiteData?.examDate;
-  const daysToExam = examDate ? daysUntil(examDate) : null;
+  const registerWorkedToday = useStudyTrackerStore(
+    (state) => state.registerWorkedToday
+  );
 
-  // Register that user worked today when they visit a subject page
+  // Marker studiedag
   useEffect(() => {
     registerWorkedToday();
   }, [registerWorkedToday]);
 
-  // Ensure subjects are loaded so the detail view can resolve the current subject
-  useEffect(() => {
-    if (user) {
-      loadSubjects(user.id);
-    }
-  }, [user, loadSubjects]);
-
+  // Ikke rendér noe før auth er klar
   if (!user) {
-    return null; // AuthProvider will redirect
+    return null;
   }
 
-  if (loading || !initialized) {
+  // ⏳ Vent eksplisitt på at subjects faktisk finnes
+  if (loading || subjects.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">Laster...</p>
-          </div>
+        <div className="max-w-7xl mx-auto py-12 text-center">
+          <p className="text-gray-600 dark:text-gray-400">Laster fag…</p>
         </div>
       </div>
     );
   }
+
+  const subject = subjects.find((s) => s.id === subjectId);
 
   if (!subject) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">Fag ikke funnet</p>
-            <Link href="/subjects" className="text-blue-600 hover:underline mt-4 inline-block">
-              Tilbake til fag
-            </Link>
-          </div>
+        <div className="max-w-7xl mx-auto py-12 text-center">
+          <p className="text-gray-600 dark:text-gray-400">Fag ikke funnet</p>
+          <Link
+            href="/subjects"
+            className="text-blue-600 hover:underline mt-4 inline-block"
+          >
+            Tilbake til fag
+          </Link>
         </div>
       </div>
     );
   }
+
+  const examDate = subject.examDate || plannerLiteData?.examDate;
+  const daysToExam = examDate ? daysUntil(examDate) : null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -87,9 +85,11 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
             >
               ← Tilbake til fag
             </Link>
+
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {subject.name}
             </h1>
+
             {daysToExam !== null && (
               <p className="text-lg text-blue-600 dark:text-blue-400 mt-2">
                 {daysToExam > 0
@@ -101,12 +101,16 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
             )}
           </div>
 
-          {/* Oversikt Section */}
+          {/* Oversikt */}
           <div className="mb-6">
-            <Oversikt subjectId={subjectId} initialExamDate={examDate} isPro={IS_PRO_FEATURE} />
+            <Oversikt
+              subjectId={subjectId}
+              initialExamDate={examDate}
+              isPro={IS_PRO_FEATURE}
+            />
           </div>
 
-          {/* Action Buttons */}
+          {/* Handlinger */}
           <div className="flex gap-4 mb-6">
             <Link
               href={`/notes?subjectId=${subjectId}`}
@@ -114,6 +118,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
             >
               Åpne notater for faget
             </Link>
+
             <Link
               href={`/quiz/type/${subjectId}`}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"

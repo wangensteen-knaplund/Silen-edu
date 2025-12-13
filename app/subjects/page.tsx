@@ -9,6 +9,7 @@ import SubjectCard from "@/components/SubjectCard";
 interface Subject {
   id: string;
   name: string;
+  semester?: string;
   examDate?: string;
 }
 
@@ -34,7 +35,7 @@ export default function SubjectsPage() {
     try {
       const { data, error } = await supabase
         .from("subjects")
-        .select("id, name, exam_date")
+        .select("id, name, semester, exam_date")
         .eq("user_id", user.id)
         .order("name");
 
@@ -47,6 +48,7 @@ export default function SubjectsPage() {
         const mappedSubjects = data.map((subject) => ({
           id: subject.id,
           name: subject.name,
+          semester: subject.semester,
           examDate: subject.exam_date,
         }));
         setSubjects(mappedSubjects);
@@ -96,6 +98,7 @@ export default function SubjectsPage() {
         const newSubject: Subject = {
           id: data.id,
           name: data.name,
+          semester: data.semester,
           examDate: data.exam_date,
         };
         setSubjects([...subjects, newSubject]);

@@ -7,7 +7,7 @@ interface ClientLayoutProps {
   children: ReactNode;
 }
 
-export function ClientLayout({ children }: ClientLayoutProps) {
+export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <>
       <MainNav />
@@ -15,5 +15,3 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     </>
   );
 }
-
-export default ClientLayout;

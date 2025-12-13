@@ -1,61 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabaseClient";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import StudyHeatmapStrip from "@/components/dashboard/StudyHeatmapStrip";
 
-interface Subject {
-  id: string;
-  name: string;
-  examDate?: string;
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
+  const subjects = useSubjectsStore((state) => state.subjects);
+  const loading = useSubjectsStore((state) => state.loading);
+  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
   const getWeeklyIntensities = useStudyTrackerStore((state) => state.getWeeklyIntensities);
   const intensities = getWeeklyIntensities();
 
   useEffect(() => {
     if (user) {
-      fetchSubjects();
+      loadSubjects(user.id);
     }
-  }, [user]);
-
-  const fetchSubjects = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("id, name, exam_date")
-        .eq("user_id", user.id)
-        .order("name");
-
-      if (error) {
-        console.error("Error fetching subjects:", error);
-        return;
-      }
-
-      if (data) {
-        const mappedSubjects = data.map((subject) => ({
-          id: subject.id,
-          name: subject.name,
-          examDate: subject.exam_date,
-        }));
-        setSubjects(mappedSubjects);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, loadSubjects]);
 
   if (!user) {
     return null; // AuthProvider will redirect

@@ -5,18 +5,16 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import SubjectCard from "@/components/SubjectCard";
-
-interface Subject {
-  id: string;
-  name: string;
-  semester?: string;
-  examDate?: string;
-}
+import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { Subject } from "@/types/data";
 
 export default function SubjectsPage() {
   const { user } = useAuth();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
+  const subjects = useSubjectsStore((state) => state.subjects);
+  const loading = useSubjectsStore((state) => state.loading);
+  const addSubjectToStore = useSubjectsStore((state) => state.addSubject);
+  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectSemester, setNewSubjectSemester] = useState("");
@@ -25,40 +23,9 @@ export default function SubjectsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchSubjects();
+      loadSubjects(user.id);
     }
-  }, [user]);
-
-  const fetchSubjects = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("id, name, semester, exam_date")
-        .eq("user_id", user.id)
-        .order("name");
-
-      if (error) {
-        console.error("Error fetching subjects:", error);
-        return;
-      }
-
-      if (data) {
-        const mappedSubjects = data.map((subject) => ({
-          id: subject.id,
-          name: subject.name,
-          semester: subject.semester,
-          examDate: subject.exam_date,
-        }));
-        setSubjects(mappedSubjects);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, loadSubjects]);
 
   const handleAddSubject = async () => {
     if (!newSubjectName.trim()) {
@@ -97,11 +64,12 @@ export default function SubjectsPage() {
         // Add to local state
         const newSubject: Subject = {
           id: data.id,
+          userId: data.user_id,
           name: data.name,
           semester: data.semester,
           examDate: data.exam_date,
         };
-        setSubjects([...subjects, newSubject]);
+        addSubjectToStore(newSubject);
 
         // Reset form
         setNewSubjectName("");

@@ -1,8 +1,13 @@
+"use client";
+
 import { create } from "zustand";
+import { supabase } from "@/lib/supabaseClient";
 import { Subject } from "@/types/data";
 
 interface SubjectsStore {
   subjects: Subject[];
+  loading: boolean;
+  loadSubjects: (userId: string) => Promise<void>;
   setSubjects: (subjects: Subject[]) => void;
   addSubject: (subject: Subject) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
@@ -10,23 +15,33 @@ interface SubjectsStore {
 }
 
 export const useSubjectsStore = create<SubjectsStore>((set) => ({
-  subjects: [
-    // Placeholder data
-    {
-      id: "1",
-      userId: "user-1",
-      name: "Matematikk 1",
-      semester: "Høst 2024",
-      examDate: "2024-12-20",
-    },
-    {
-      id: "2",
-      userId: "user-1",
-      name: "Programmering",
-      semester: "Høst 2024",
-      examDate: "2024-12-15",
-    },
-  ],
+  subjects: [],
+  loading: false,
+  loadSubjects: async (userId: string) => {
+    set({ loading: true });
+
+    const { data, error } = await supabase
+      .from("subjects")
+      .select("id, user_id, name, semester, exam_date")
+      .eq("user_id", userId)
+      .order("name");
+
+    if (error) {
+      console.error("Error loading subjects:", error);
+      set({ subjects: [], loading: false });
+      return;
+    }
+
+    const mappedSubjects: Subject[] = (data || []).map((subject) => ({
+      id: subject.id,
+      userId: subject.user_id,
+      name: subject.name,
+      semester: subject.semester ?? undefined,
+      examDate: subject.exam_date ?? undefined,
+    }));
+
+    set({ subjects: mappedSubjects, loading: false });
+  },
   setSubjects: (subjects) => set({ subjects }),
   addSubject: (subject) =>
     set((state) => ({ subjects: [...state.subjects, subject] })),

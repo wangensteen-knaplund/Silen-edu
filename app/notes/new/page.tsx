@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
-import { generateSummaryPlaceholder } from "@/lib/ai/summaries";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function NewNotePage() {
@@ -18,22 +17,9 @@ export default function NewNotePage() {
   const addNote = useNotesStore((state) => state.addNote);
   const registerNoteEdited = useStudyTrackerStore((state) => state.registerNoteEdited);
 
-  const [title, setTitle] = useState("");
   const [subjectId, setSubjectId] = useState("");
-  const [tags, setTags] = useState("");
   const [content, setContent] = useState("");
-  const [aiSummary, setAiSummary] = useState("");
-  const [generatingSummary, setGeneratingSummary] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const deriveTitleFromContent = (value: string) => {
-    const firstLine = value
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find((line) => line.length > 0);
-
-    return firstLine || "Uten tittel";
-  };
 
   const handleSave = async () => {
     if (!user) {
@@ -42,7 +28,6 @@ export default function NewNotePage() {
     }
 
     const trimmedContent = content.trim();
-    const noteTitle = title.trim() || deriveTitleFromContent(trimmedContent);
 
     if (!subjectId || !trimmedContent) {
       alert("Vennligst fyll ut fag og innhold");
@@ -58,7 +43,6 @@ export default function NewNotePage() {
           {
             user_id: user.id,
             subject_id: subjectId,
-            title: noteTitle,
             content: trimmedContent,
           },
         ])
@@ -73,14 +57,10 @@ export default function NewNotePage() {
 
       const newNote = {
         id: data.id,
-        title: data.title,
         userId: data.user_id,
         subjectId: data.subject_id,
         content: data.content,
         createdAt: data.created_at,
-        updatedAt: data.updated_at ?? undefined,
-        isPublic: Boolean(data.is_public),
-        publicId: data.public_id ?? null,
       };
 
       addNote(newNote);
@@ -91,24 +71,6 @@ export default function NewNotePage() {
       alert("Kunne ikke lagre notatet. Prøv igjen.");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleGenerateSummary = async () => {
-    if (!content.trim()) {
-      alert("Skriv litt innhold først");
-      return;
-    }
-
-    setGeneratingSummary(true);
-    try {
-      const summary = await generateSummaryPlaceholder(content);
-      setAiSummary(summary);
-    } catch (error) {
-      console.error("Error generating summary:", error);
-      alert("Feil ved generering av sammendrag");
-    } finally {
-      setGeneratingSummary(false);
     }
   };
 
@@ -142,21 +104,6 @@ export default function NewNotePage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="space-y-6">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  Tittel
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="F.eks. Derivasjon og integrasjon"
-                  disabled={saving}
-                />
-              </div>
-
               {/* Subject */}
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -177,21 +124,6 @@ export default function NewNotePage() {
                 </select>
               </div>
 
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  Tags (Placeholder - kommaseparert)
-                </label>
-                <input
-                  type="text"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="F.eks. matte, eksamen, viktig"
-                  disabled={saving}
-                />
-              </div>
-
               {/* Content */}
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -204,27 +136,6 @@ export default function NewNotePage() {
                   placeholder="Skriv notatet ditt her..."
                   disabled={saving}
                 />
-              </div>
-
-              {/* AI Summary Button */}
-              <div>
-                <button
-                  onClick={handleGenerateSummary}
-                  disabled={generatingSummary || saving}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {generatingSummary
-                    ? "Genererer..."
-                    : "🤖 Generate summary (AI placeholder)"}
-                </button>
-                {aiSummary && (
-                  <div className="mt-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <p className="text-sm font-medium text-purple-900 dark:text-purple-300 mb-2">
-                      AI Sammendrag:
-                    </p>
-                    <p className="text-gray-700 dark:text-gray-300">{aiSummary}</p>
-                  </div>
-                )}
               </div>
 
               {/* Save Button */}

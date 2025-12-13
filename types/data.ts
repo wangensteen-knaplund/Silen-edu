@@ -9,14 +9,10 @@ export interface Subject {
 
 export interface Note {
   id: string;
-  title: string;
-  subjectId: string;
   userId: string;
+  subjectId: string;
   content: string;
   createdAt: string;
-  updatedAt?: string;
-  isPublic: boolean;
-  publicId?: string | null;
 }
 
 export interface Tag {

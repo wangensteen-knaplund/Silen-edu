@@ -1,73 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import SubjectCard from "@/components/SubjectCard";
-import { supabase } from "@/lib/supabaseClient";
-
-interface Subject {
-  id: string;
-  name: string;
-  note_count?: number;
-}
+import { useNotesStore } from "@/store/useNotesStore";
+import { useSubjectsStore } from "@/store/useSubjectsStore";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user } = useAuth();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchSubjects(user.id);
-    }
-  }, [user]);
-
-  const fetchSubjects = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("id, name")
-        .eq("user_id", userId)
-        .order("name");
-
-      if (error) {
-        console.error("Error fetching subjects:", error);
-        return;
-      }
-
-      if (data) {
-        // Fetch note counts for each subject
-        const subjectsWithCounts = await Promise.all(
-          data.map(async (subject) => {
-            const { count } = await supabase
-              .from("notes")
-              .select("*", { count: "exact", head: true })
-              .eq("subject_id", subject.id)
-              .eq("user_id", userId);
-
-            return {
-              ...subject,
-              note_count: count || 0,
-            };
-          })
-        );
-
-        setSubjects(subjectsWithCounts);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const subjects = useSubjectsStore((state) => state.subjects);
+  const subjectsInitialized = useSubjectsStore((state) => state.initialized);
+  const subjectsLoading = useSubjectsStore((state) => state.loading);
+  const notes = useNotesStore((state) => state.notes);
+  const notesInitialized = useNotesStore((state) => state.initialized);
+  const notesLoading = useNotesStore((state) => state.loading);
 
   if (!user) {
     return null; // AuthProvider will redirect
   }
+
+  const isLoading =
+    subjectsLoading ||
+    !subjectsInitialized ||
+    notesLoading ||
+    !notesInitialized;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -86,7 +43,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12">
               <p className="text-gray-600 dark:text-gray-400">Laster...</p>
             </div>
@@ -105,14 +62,21 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subjects.map((subject) => (
-                <SubjectCard
-                  key={subject.id}
-                  id={subject.id}
-                  name={subject.name}
-                  noteCount={subject.note_count}
-                />
-              ))}
+              {subjects.map((subject) => {
+                const noteCount = notesInitialized
+                  ? notes.filter((note) => note.subjectId === subject.id).length
+                  : 0;
+
+                return (
+                  <SubjectCard
+                    key={subject.id}
+                    id={subject.id}
+                    name={subject.name}
+                    noteCount={noteCount}
+                    examDate={subject.examDate}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

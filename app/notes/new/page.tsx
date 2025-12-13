@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -14,12 +14,20 @@ export default function NewNotePage() {
   const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
   const subjectsInitialized = useSubjectsStore((state) => state.initialized);
+  const subjectsLoading = useSubjectsStore((state) => state.loading);
+  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
   const addNote = useNotesStore((state) => state.addNote);
   const registerNoteEdited = useStudyTrackerStore((state) => state.registerNoteEdited);
 
   const [subjectId, setSubjectId] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user || subjectsInitialized || subjectsLoading) return;
+
+    loadSubjects(user.id);
+  }, [user, subjectsInitialized, subjectsLoading, loadSubjects]);
 
   const handleSave = async () => {
     if (!user) {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
-import MainNav from "@/components/layout/MainNav";
+import ClientLayout from "@/components/layout/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Silen-Edu - AI-drevet studieplattform",
@@ -15,8 +15,7 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body className="antialiased">
-        <MainNav />
-        <main>{children}</main>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

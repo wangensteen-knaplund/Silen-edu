@@ -5,6 +5,25 @@ Dette er MVP‑versjonen, bygget for å være rask, fokusert og ekstremt nyttig 
 
 ---
 
+## 🏗️ Architecture
+
+**V2 Architecture Proposal Available**
+
+A comprehensive V2 frontend architecture has been proposed to address current reliability issues:
+- **[Quick Reference](./ARCHITECTURE_V2_SUMMARY.md)** - Start here (5 min)
+- **[Full Architecture Proposal](./ARCHITECTURE_V2.md)** - Conceptual design (20 min)
+- **[Implementation Guide](./ARCHITECTURE_V2_IMPLEMENTATION.md)** - Code patterns (40 min)
+- **[Migration Plan](./ARCHITECTURE_V2_MIGRATION.md)** - Step-by-step guide (25 min)
+
+The V2 architecture addresses:
+- ✅ Application crashes when subjects fail to load
+- ✅ Unreliable state hydration
+- ✅ Planner/overview testability issues
+- ✅ Frontend/backend schema misalignment
+- ✅ Feature regressions
+
+---
+
 ## 🚀 Installasjon og oppsett
 
 ### Forutsetninger

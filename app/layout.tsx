@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
+import MainNav from "@/components/layout/MainNav";
 
 export const metadata: Metadata = {
-  title: "StudyApp - AI-drevet studieplattform",
+  title: "Silen-Edu - AI-drevet studieplattform",
   description: "Organiser notater, planlegg studier, og bruk AI til å oppsummere og lage quiz",
 };
 
@@ -14,7 +15,8 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body className="antialiased">
-        {children}
+        <MainNav />
+        <main>{children}</main>
       </body>
     </html>
   );

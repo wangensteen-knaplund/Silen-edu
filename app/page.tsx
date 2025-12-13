@@ -1,58 +1,74 @@
+"use client";
+
 import Link from "next/link";
+import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
+import StudyHeatmapStrip from "@/components/dashboard/StudyHeatmapStrip";
 
-export default function Home() {
+export default function Dashboard() {
+  const subjects = useSubjectsStore((state) => state.subjects);
+  const getWeeklyIntensities = useStudyTrackerStore((state) => state.getWeeklyIntensities);
+  const intensities = getWeeklyIntensities();
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <main className="max-w-4xl text-center">
-        <h1 className="text-5xl font-bold mb-4 text-blue-600 dark:text-blue-400">
-          📚 StudyApp
-        </h1>
-        <p className="text-xl mb-8 text-gray-700 dark:text-gray-300">
-          AI-drevet studieplattform for smarte studenter
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">✅ Notater</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Opprett, rediger og organiser notater etter fag
-            </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          {/* Greeting Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Velkommen, bruker. Hva vil du gjøre i dag?
+            </h1>
           </div>
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">🧠 AI-funksjoner</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Oppsummer notater og generer quiz automatisk
-            </p>
-          </div>
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">📅 Study Planner</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Enkel planlegging med mål og ukentlig struktur
-            </p>
-          </div>
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">🔗 Del notater</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Gjør notater offentlige med én toggle
-            </p>
-          </div>
-        </div>
 
-        <div className="flex gap-4 justify-center">
-          <Link
-            href="/auth/login"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Logg inn
-          </Link>
-          <Link
-            href="/auth/register"
-            className="px-6 py-3 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Registrer deg
-          </Link>
+          {/* Weekly Study Tracker Section */}
+          <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              Ukentlig studieaktivitet
+            </h2>
+            <StudyHeatmapStrip intensities={intensities} />
+          </div>
+
+          {/* Subjects Overview Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Mine fag
+              </h2>
+              <Link
+                href="/subjects"
+                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+              >
+                Se alle →
+              </Link>
+            </div>
+            {subjects.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-400">
+                Ingen fag lagt til ennå.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {subjects.slice(0, 6).map((subject) => (
+                  <Link
+                    key={subject.id}
+                    href={`/subjects/${subject.id}`}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow"
+                  >
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {subject.name}
+                    </h3>
+                    {subject.examDate && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Eksamen: {subject.examDate}
+                      </p>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

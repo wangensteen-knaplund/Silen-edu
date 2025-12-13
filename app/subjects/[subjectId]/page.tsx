@@ -23,6 +23,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
 
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
+  const initialized = useSubjectsStore((state) => state.initialized);
   const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
 
   const plannerLiteData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
@@ -48,7 +49,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     return null; // AuthProvider will redirect
   }
 
-  if (loading) {
+  if (loading || !initialized) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

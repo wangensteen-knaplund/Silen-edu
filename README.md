@@ -451,5 +451,84 @@ Proprietær – ikke for distribusjon uten tillatelse.
 
 ## 📞 Support
 
+diff --git a/docs/visualizations.md b/docs/visualizations.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0eb294e1cf74008ab611bfa945e6158551fb8ff9
+--- /dev/null
++++ b/docs/visualizations.md
+@@ -0,0 +1,72 @@
++# Silen-Edu – UX-flyt og arkitektur
++
++Denne siden gir to raske visualiseringer av Silen-Edu slik den er implementert i MVP-en: en UX-flyt gjennom hovedskjermene og en høy-nivå arkitektur over klient, server og datalag.
++
++## UX-flyt
++```mermaid
++flowchart TD
++    entry([Bruker åpner app])
++    auth{Innlogget?}
++    register[Registrer / Logg inn
++Supabase Auth]
++    dashboard[Dashboard
++– ukentlig heatmap
++– fagkort
++– snarveier]
++    subjects[Subjects side
++(listing)]
++    subjectDetail[Fagdetalj
++– Planner Lite
++– lenker til Notater/Quiz]
++    notes[Notater oversikt
++med fagfilter]
++    noteEditor[Note editor
++– tittel/innhold
++– AI-knapp (placeholder)
++– Public-toggle]
++    publicView[Offentlig notatvisning
++readonly]
++    quizHome[Quiz hjem
++velg fag]
++    quizType[Quiz-type valg
++Flashcards / MC / AI (placeholder)]
++    quizSession[Quiz- eller
++flashcard-økt]
++    settings[Innstillinger
++konto / utseende /
++abonnement]
++
++    entry --> auth
++    auth -- Nei --> register --> dashboard
++    auth -- Ja --> dashboard
++    dashboard --> subjects --> subjectDetail
++    subjectDetail --> notes
++    dashboard --> notes
++    notes --> noteEditor
++    noteEditor -->|Publiser| publicView
++    dashboard --> quizHome --> quizType --> quizSession
++    dashboard --> settings
++```
++
++## Arkitektur
++```mermaid
++flowchart LR
++    user["Bruker i nettleser"]
++    ui["Next.js 16 App Router\nReact 19 + Tailwind"]
++    state["Zustand stores\n(klienttilstand og demo-data)"]
++    api["API routes / server actions\n(placeholder for AI)"]
++    supabase["Supabase\nAuth + Postgres + RLS"]
++    ai["AI-integrasjon\n(OpenAI/Azure – planlagt)"]
++
++    user --> ui
++    ui <--> state
++    ui --> api
++    api --> supabase
++    api -. planlagt .-> ai
++    state -. sample data .-> ui
++    supabase --> ui
++```
++
++**Notater:**
++- UX-flyten følger mappestrukturen i `app/` og komponentene i `components/`, inkludert Planner Lite og quiz-modulene.
++- Arkitekturdiagrammet viser dagens MVP (statisk demo-data + Supabase-skjema) og hvor AI-integrasjon er planlagt.
+
 For spørsmål eller problemer, opprett en issue på GitHub eller kontakt prosjekteier.
 

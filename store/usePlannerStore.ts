@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { PlannerLiteData, PlannerProData, Deadline, ReadingItem, Goal } from "@/types/planner";
+import { nanoid } from "nanoid";
 
 interface PlannerStore {
   plannerLiteBySubjectId: Record<string, PlannerLiteData>;
@@ -110,7 +111,7 @@ export const usePlannerStore = create<PlannerStore>((set) => ({
         .filter((line) => line.length > 0);
       
       const newItems: ReadingItem[] = lines.map((line) => ({
-        id: Math.random().toString(36).substring(2, 9),
+        id: nanoid(),
         subjectId,
         text: line,
         completed: false,

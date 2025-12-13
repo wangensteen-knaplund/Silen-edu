@@ -24,8 +24,10 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
   const initialized = useSubjectsStore((state) => state.initialized);
+  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
   const plannerLoading = usePlannerStore((state) => state.loading);
   const plannerInitialized = usePlannerStore((state) => state.initialized);
+  const hydratePlanner = usePlannerStore((state) => state.hydrateFromSubjects);
 
   const plannerLiteData = usePlannerStore(
     (state) => state.plannerLiteBySubjectId[subjectId]
@@ -38,6 +40,23 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   useEffect(() => {
     registerWorkedToday();
   }, [registerWorkedToday]);
+
+  useEffect(() => {
+    const ensureDataLoaded = async () => {
+      if (!user || initialized || loading) return;
+
+      const loadedSubjects = await loadSubjects(user.id);
+      hydratePlanner(loadedSubjects);
+    };
+
+    void ensureDataLoaded();
+  }, [
+    user,
+    initialized,
+    loading,
+    loadSubjects,
+    hydratePlanner,
+  ]);
 
   if (!user) {
     return null;

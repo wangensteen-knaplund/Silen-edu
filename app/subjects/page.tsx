@@ -39,7 +39,7 @@ export default function SubjectsPage() {
       }
 
       if (data) {
-        const mappedSubjects = data.map((subject: any) => ({
+        const mappedSubjects = data.map((subject) => ({
           id: subject.id,
           name: subject.name,
           examDate: subject.exam_date,

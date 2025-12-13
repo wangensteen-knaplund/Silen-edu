@@ -4,16 +4,19 @@ export interface Subject {
   name: string;
   semester?: string;
   examDate?: string; // ISO date string
-  createdAt?: string;
+  createdAt: string;
 }
 
 export interface Note {
   id: string;
+  title: string;
   subjectId: string;
   userId: string;
   content: string;
   createdAt: string;
   updatedAt?: string;
+  isPublic: boolean;
+  publicId?: string | null;
 }
 
 export interface Tag {

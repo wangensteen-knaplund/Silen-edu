@@ -26,7 +26,7 @@ export const useSubjectsStore = create<SubjectsStore>((set, get) => {
 
     const { data, error } = await supabase
       .from("subjects")
-      .select("id, user_id, name, semester, exam_date")
+      .select("id, user_id, name, semester, exam_date, created_at")
       .eq("user_id", userId)
       .order("name");
 
@@ -42,6 +42,7 @@ export const useSubjectsStore = create<SubjectsStore>((set, get) => {
       name: s.name,
       semester: s.semester ?? undefined,
       examDate: s.exam_date ?? undefined,
+      createdAt: s.created_at,
     }));
 
     set({

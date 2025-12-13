@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import { generateSummaryPlaceholder } from "@/lib/ai/summaries";
 
 export default function NewNotePage() {
   const router = useRouter();
   const subjects = useSubjectsStore((state) => state.subjects);
   const addNote = useNotesStore((state) => state.addNote);
+  const registerNoteEdited = useStudyTrackerStore((state) => state.registerNoteEdited);
 
   const [title, setTitle] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -35,6 +37,10 @@ export default function NewNotePage() {
     };
 
     addNote(newNote);
+    
+    // Register that a note was created (counts as edited)
+    registerNoteEdited();
+    
     alert("Notat lagret!");
     router.push("/notes");
   };

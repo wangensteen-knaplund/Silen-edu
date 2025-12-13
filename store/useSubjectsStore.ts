@@ -7,6 +7,7 @@ import { Subject } from "@/types/data";
 interface SubjectsStore {
   subjects: Subject[];
   loading: boolean;
+  initialized: boolean;
   loadSubjects: (userId: string) => Promise<void>;
   setSubjects: (subjects: Subject[]) => void;
   addSubject: (subject: Subject) => void;
@@ -17,8 +18,9 @@ interface SubjectsStore {
 export const useSubjectsStore = create<SubjectsStore>((set) => ({
   subjects: [],
   loading: false,
+  initialized: false,
   loadSubjects: async (userId: string) => {
-    set({ loading: true });
+    set({ loading: true, initialized: false });
 
     const { data, error } = await supabase
       .from("subjects")
@@ -28,7 +30,7 @@ export const useSubjectsStore = create<SubjectsStore>((set) => ({
 
     if (error) {
       console.error("Error loading subjects:", error);
-      set({ subjects: [], loading: false });
+      set({ subjects: [], loading: false, initialized: true });
       return;
     }
 
@@ -40,9 +42,9 @@ export const useSubjectsStore = create<SubjectsStore>((set) => ({
       examDate: subject.exam_date ?? undefined,
     }));
 
-    set({ subjects: mappedSubjects, loading: false });
+    set({ subjects: mappedSubjects, loading: false, initialized: true });
   },
-  setSubjects: (subjects) => set({ subjects }),
+  setSubjects: (subjects) => set({ subjects, initialized: true }),
   addSubject: (subject) =>
     set((state) => ({ subjects: [...state.subjects, subject] })),
   updateSubject: (id, updates) =>

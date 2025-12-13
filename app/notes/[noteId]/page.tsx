@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { useNotesStore } from "@/store/useNotesStore";
@@ -11,33 +10,44 @@ export default function NoteDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const loadNotes = useNotesStore((s) => s.loadNotes);
-  const notesBySubjectId = useNotesStore((s) => s.notesBySubjectId);
-
-  // Finn notatet på tvers av alle fag
-  const allNotes = Object.values(notesBySubjectId).flat();
-  const note = allNotes.find((n) => n.id === noteId);
-
-  // Last notater hvis vi ikke har dem ennå
-  useEffect(() => {
-    if (!user || note) return;
-
-    // fallback: last ALLE fag-notater (midlertidig)
-    // bedre optimalisering kan komme senere
-    Object.keys(notesBySubjectId).forEach((subjectId) => {
-      loadNotes(user.id, subjectId);
-    });
-  }, [user, note, loadNotes, notesBySubjectId]);
+  const getNoteById = useNotesStore((state) => state.getById);
+  const notesInitialized = useNotesStore((state) => state.initialized);
+  const notesLoading = useNotesStore((state) => state.loading);
+  const note = getNoteById(noteId);
 
   if (!user) return null;
 
-  if (!note) {
+  if (notesLoading || !notesInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-500">Laster notat…</p>
       </div>
     );
   }
+
+  if (!note) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-gray-500">Fant ikke notatet.</p>
+          <button
+            onClick={() => router.back()}
+            className="text-blue-600 hover:underline"
+          >
+            Gå tilbake
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const title = (() => {
+    const firstLine = note.content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0);
+    return firstLine || "Uten tittel";
+  })();
 
   return (
     <div className="max-w-3xl mx-auto py-8">
@@ -48,7 +58,7 @@ export default function NoteDetailPage() {
         ← Tilbake til notater
       </Link>
 
-      <h1 className="text-2xl font-bold mb-4">{note.title}</h1>
+      <h1 className="text-2xl font-bold mb-4">{title}</h1>
 
       <div className="prose max-w-none">
         <p>{note.content}</p>

@@ -11,7 +11,6 @@ export interface Note {
   id: string;
   subjectId: string;
   userId: string;
-  title: string;
   content: string;
   createdAt: string;
   updatedAt?: string;

@@ -43,11 +43,16 @@ export function generateBasicMCQFromNotes(notes: Note[]): QuizQuestion[] {
     if (wrongAnswers.length >= 1) {
       const allOptions = [firstSentence, ...wrongAnswers].slice(0, 4);
       const shuffledOptions = shuffleArray(allOptions);
+      const questionText = deriveNoteTitle(currentNote.content);
+
+      if (!questionText) {
+        continue;
+      }
 
       questions.push({
         id: nanoid(),
         type: "mcq_basic",
-        question: currentNote.title,
+        question: questionText,
         options: shuffledOptions,
         correctAnswer: firstSentence,
       });
@@ -75,6 +80,15 @@ function extractFirstSentence(text: string): string {
   // If no sentence ending found, take first 100 characters or up to newline
   const firstLine = cleaned.split('\n')[0];
   return firstLine.substring(0, 100).trim();
+}
+
+function deriveNoteTitle(content: string): string {
+  const firstNonEmptyLine = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+
+  return firstNonEmptyLine || "Notat";
 }
 
 /**

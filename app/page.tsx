@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
@@ -11,26 +10,17 @@ export default function Dashboard() {
   const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
-  const hasLoaded = useSubjectsStore((state) => state.hasLoaded);
-  const ensureSubjectsLoaded = useSubjectsStore(
-    (state) => state.ensureSubjectsLoaded
-  );
+  const initialized = useSubjectsStore((state) => state.initialized);
   const getWeeklyIntensities = useStudyTrackerStore(
     (state) => state.getWeeklyIntensities
   );
   const intensities = getWeeklyIntensities();
 
-  useEffect(() => {
-    if (user) {
-      ensureSubjectsLoaded(user.id);
-    }
-  }, [user, ensureSubjectsLoaded]);
-
   if (!user) {
     return null; // AuthProvider will redirect
   }
 
-  const isLoading = loading || !hasLoaded;
+  const isLoading = loading || !initialized;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

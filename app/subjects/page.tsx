@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import SubjectCard from "@/components/SubjectCard";
+import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { Subject } from "@/types/data";
 
@@ -12,23 +13,16 @@ export default function SubjectsPage() {
   const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
-  const hasLoaded = useSubjectsStore((state) => state.hasLoaded);
+  const initialized = useSubjectsStore((state) => state.initialized);
   const addSubjectToStore = useSubjectsStore((state) => state.addSubject);
-  const ensureSubjectsLoaded = useSubjectsStore(
-    (state) => state.ensureSubjectsLoaded
-  );
+  const notes = useNotesStore((state) => state.notes);
+  const notesInitialized = useNotesStore((state) => state.initialized);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectSemester, setNewSubjectSemester] = useState("");
   const [newSubjectExamDate, setNewSubjectExamDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      ensureSubjectsLoaded(user.id);
-    }
-  }, [user, ensureSubjectsLoaded]);
 
   const handleAddSubject = async () => {
     if (!newSubjectName.trim()) {
@@ -68,8 +62,8 @@ export default function SubjectsPage() {
           id: data.id,
           userId: data.user_id,
           name: data.name,
-          semester: data.semester,
-          examDate: data.exam_date,
+          semester: data.semester ?? undefined,
+          examDate: data.exam_date ?? undefined,
         };
         addSubjectToStore(newSubject);
 
@@ -90,7 +84,7 @@ export default function SubjectsPage() {
     return null; // AuthProvider will redirect
   }
 
-  const isLoading = loading || !hasLoaded;
+  const isLoading = loading || !initialized;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -189,15 +183,21 @@ export default function SubjectsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subjects.map((subject) => (
-                <SubjectCard
-                  key={subject.id}
-                  id={subject.id}
-                  name={subject.name}
-                  examDate={subject.examDate}
-                  noteCount={0}
-                />
-              ))}
+              {subjects.map((subject) => {
+                const noteCount = notesInitialized
+                  ? notes.filter((note) => note.subjectId === subject.id).length
+                  : 0;
+
+                return (
+                  <SubjectCard
+                    key={subject.id}
+                    id={subject.id}
+                    name={subject.name}
+                    examDate={subject.examDate}
+                    noteCount={noteCount}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

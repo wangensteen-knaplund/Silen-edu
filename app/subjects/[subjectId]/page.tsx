@@ -23,10 +23,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
 
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
-  const hasLoaded = useSubjectsStore((state) => state.hasLoaded);
-  const ensureSubjectsLoaded = useSubjectsStore(
-    (state) => state.ensureSubjectsLoaded
-  );
+  const initialized = useSubjectsStore((state) => state.initialized);
 
   const plannerLiteData = usePlannerStore(
     (state) => state.plannerLiteBySubjectId[subjectId]
@@ -37,12 +34,6 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   );
 
   useEffect(() => {
-    if (user) {
-      ensureSubjectsLoaded(user.id);
-    }
-  }, [user, ensureSubjectsLoaded]);
-
-  useEffect(() => {
     registerWorkedToday();
   }, [registerWorkedToday]);
 
@@ -50,7 +41,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     return null;
   }
 
-  const isLoading = loading || !hasLoaded;
+  const isLoading = loading || !initialized;
 
   if (isLoading) {
     return (

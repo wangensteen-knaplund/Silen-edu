@@ -9,20 +9,45 @@ export default function NotesPage() {
   const searchParams = useSearchParams();
   const subjectIdFilter = searchParams.get("subjectId");
 
-  const notesBySubjectId = useNotesStore((state) => state.notesBySubjectId);
+  const notes = useNotesStore((state) => state.notes);
+  const notesInitialized = useNotesStore((state) => state.initialized);
+  const notesLoading = useNotesStore((state) => state.loading);
+  const getNotesBySubject = useNotesStore((state) => state.getBySubject);
+
   const subjects = useSubjectsStore((state) => state.subjects);
+  const subjectsInitialized = useSubjectsStore((state) => state.initialized);
+  const subjectsLoading = useSubjectsStore((state) => state.loading);
 
-  // Finn hvilke fag vi skal vise notater for
-  const subjectIds = subjectIdFilter
-    ? [subjectIdFilter]
-    : Object.keys(notesBySubjectId);
+  const visibleNotes = subjectIdFilter
+    ? getNotesBySubject(subjectIdFilter)
+    : notes;
 
-  // Flatt ut notater
-  const notes = subjectIds.flatMap(
-    (subjectId) => notesBySubjectId[subjectId] ?? []
-  );
+  const isLoading =
+    notesLoading ||
+    !notesInitialized ||
+    subjectsLoading ||
+    !subjectsInitialized;
 
-  if (notes.length === 0) {
+  const getTitleFromContent = (content: string) => {
+    const firstLine = content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 0);
+
+    return firstLine || "Uten tittel";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto py-12 text-center">
+          <p className="text-gray-600 dark:text-gray-400">Laster notater…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (visibleNotes.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto py-12 text-center">
@@ -48,7 +73,7 @@ export default function NotesPage() {
         </h1>
 
         <div className="space-y-4">
-          {notes.map((note) => {
+          {visibleNotes.map((note) => {
             const subject = subjects.find((s) => s.id === note.subjectId);
 
             return (
@@ -58,7 +83,7 @@ export default function NotesPage() {
                 className="block p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition"
               >
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {note.title || "Uten tittel"}
+                  {getTitleFromContent(note.content)}
                 </h2>
                 {subject && (
                   <p className="text-sm text-gray-500 dark:text-gray-400">

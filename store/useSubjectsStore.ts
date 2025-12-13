@@ -7,14 +7,11 @@ import { Subject } from "@/types/data";
 interface SubjectsStore {
   subjects: Subject[];
   loading: boolean;
-  hasLoaded: boolean;
-  lastLoadedUserId: string | null;
+  initialized: boolean;
 
-  loadSubjects: (userId: string, options?: { force?: boolean }) => Promise<Subject[]>;
-  ensureSubjectsLoaded: (userId: string) => Promise<Subject[]>;
-  setSubjects: (subjects: Subject[]) => void;
+  loadSubjects: (userId: string) => Promise<Subject[]>;
+  getById: (subjectId: string) => Subject | undefined;
   reset: () => void;
-
   addSubject: (subject: Subject) => void;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
   removeSubject: (id: string) => void;
@@ -22,6 +19,7 @@ interface SubjectsStore {
 
 export const useSubjectsStore = create<SubjectsStore>((set, get) => {
   let loadPromise: Promise<Subject[]> | null = null;
+  let lastUserId: string | null = null;
 
   const fetchSubjects = async (userId: string): Promise<Subject[]> => {
     set({ loading: true });
@@ -34,7 +32,7 @@ export const useSubjectsStore = create<SubjectsStore>((set, get) => {
 
     if (error) {
       console.error("Error loading subjects:", error);
-      set({ loading: false, hasLoaded: true, lastLoadedUserId: userId });
+      set({ loading: false, initialized: true });
       return [];
     }
 
@@ -49,84 +47,51 @@ export const useSubjectsStore = create<SubjectsStore>((set, get) => {
     set({
       subjects: mapped,
       loading: false,
-      hasLoaded: true,
-      lastLoadedUserId: userId,
+      initialized: true,
     });
 
     return mapped;
   };
 
-  const loadSubjects = async (
-    userId: string,
-    options?: { force?: boolean }
-  ): Promise<Subject[]> => {
+  const loadSubjects = async (userId: string): Promise<Subject[]> => {
     if (!userId) {
-      set({ subjects: [], loading: false, hasLoaded: false, lastLoadedUserId: null });
+      lastUserId = null;
+      set({ subjects: [], loading: false, initialized: false });
       return [];
     }
 
-    const { lastLoadedUserId, hasLoaded } = get();
-
-    if (!options?.force && hasLoaded && lastLoadedUserId === userId) {
+    if (get().initialized && !get().loading && lastUserId === userId) {
       return get().subjects;
     }
 
-    if (loadPromise && !options?.force) {
+    if (loadPromise) {
       return loadPromise;
     }
 
+    lastUserId = userId;
     loadPromise = fetchSubjects(userId);
     const result = await loadPromise;
     loadPromise = null;
     return result;
   };
 
-  const ensureSubjectsLoaded = async (userId: string): Promise<Subject[]> => {
-    if (!userId) {
-      return [];
-    }
-
-    const { hasLoaded, lastLoadedUserId } = get();
-    if (hasLoaded && lastLoadedUserId === userId) {
-      return get().subjects;
-    }
-
-    return loadSubjects(userId);
-  };
-
   return {
     subjects: [],
     loading: false,
-    hasLoaded: false,
-    lastLoadedUserId: null,
+    initialized: false,
 
     loadSubjects,
-    ensureSubjectsLoaded,
+    getById: (subjectId) => get().subjects.find((s) => s.id === subjectId),
 
-    setSubjects: (subjects) =>
-      set((state) => ({
-        subjects,
-        loading: false,
-        hasLoaded: subjects.length > 0 ? true : false,
-        lastLoadedUserId:
-          subjects.length > 0
-            ? subjects[0].userId
-            : state.lastLoadedUserId,
-      })),
-
-    reset: () =>
-      set({
-        subjects: [],
-        loading: false,
-        hasLoaded: false,
-        lastLoadedUserId: null,
-      }),
+    reset: () => {
+      lastUserId = null;
+      set({ subjects: [], loading: false, initialized: false });
+    },
 
     addSubject: (subject) =>
       set((state) => ({
         subjects: [...state.subjects, subject],
-        hasLoaded: true,
-        lastLoadedUserId: subject.userId,
+        initialized: true,
       })),
 
     updateSubject: (id, updates) =>

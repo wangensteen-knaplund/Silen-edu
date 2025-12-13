@@ -3,14 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import { generateSummaryPlaceholder } from "@/lib/ai/summaries";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function NewNotePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
+  const subjectsInitialized = useSubjectsStore((state) => state.initialized);
   const addNote = useNotesStore((state) => state.addNote);
   const registerNoteEdited = useStudyTrackerStore((state) => state.registerNoteEdited);
 
@@ -20,29 +24,62 @@ export default function NewNotePage() {
   const [content, setContent] = useState("");
   const [aiSummary, setAiSummary] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!title.trim() || !subjectId || !content.trim()) {
-      alert("Vennligst fyll ut tittel, fag og innhold");
+  const handleSave = async () => {
+    if (!user) {
+      alert("Du må være innlogget for å lagre notater");
       return;
     }
 
-    const newNote = {
-      id: `note-${Date.now()}`,
-      userId: "user-1",
-      title: title.trim(),
-      subjectId,
-      content: content.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    if (!subjectId || !content.trim()) {
+      alert("Vennligst fyll ut fag og innhold");
+      return;
+    }
 
-    addNote(newNote);
-    
-    // Register that a note was created (counts as edited)
-    registerNoteEdited();
-    
-    alert("Notat lagret!");
-    router.push("/notes");
+    const combinedContent = title.trim()
+      ? `${title.trim()}\n\n${content.trim()}`
+      : content.trim();
+
+    setSaving(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("notes")
+        .insert([
+          {
+            user_id: user.id,
+            subject_id: subjectId,
+            content: combinedContent,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error("Error saving note:", error);
+        alert("Kunne ikke lagre notatet. Prøv igjen.");
+        return;
+      }
+
+      const newNote = {
+        id: data.id,
+        userId: data.user_id,
+        subjectId: data.subject_id,
+        content: data.content,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at ?? undefined,
+      };
+
+      addNote(newNote);
+      registerNoteEdited();
+      router.push(`/notes?subjectId=${subjectId}`);
+    } catch (err) {
+      console.error("Unexpected error saving note:", err);
+      alert("Kunne ikke lagre notatet. Prøv igjen.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleGenerateSummary = async () => {
@@ -62,6 +99,18 @@ export default function NewNotePage() {
       setGeneratingSummary(false);
     }
   };
+
+  if (!user) {
+    return null;
+  }
+
+  if (!subjectsInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <p className="text-gray-600 dark:text-gray-400">Laster fag…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -92,6 +141,7 @@ export default function NewNotePage() {
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="F.eks. Derivasjon og integrasjon"
+                  disabled={saving}
                 />
               </div>
 
@@ -104,6 +154,7 @@ export default function NewNotePage() {
                   value={subjectId}
                   onChange={(e) => setSubjectId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  disabled={saving}
                 >
                   <option value="">Velg fag</option>
                   {subjects.map((subject) => (
@@ -125,6 +176,7 @@ export default function NewNotePage() {
                   onChange={(e) => setTags(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="F.eks. matte, eksamen, viktig"
+                  disabled={saving}
                 />
               </div>
 
@@ -138,6 +190,7 @@ export default function NewNotePage() {
                   onChange={(e) => setContent(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white h-64 resize-y"
                   placeholder="Skriv notatet ditt her..."
+                  disabled={saving}
                 />
               </div>
 
@@ -145,7 +198,7 @@ export default function NewNotePage() {
               <div>
                 <button
                   onClick={handleGenerateSummary}
-                  disabled={generatingSummary}
+                  disabled={generatingSummary || saving}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {generatingSummary
@@ -166,9 +219,10 @@ export default function NewNotePage() {
               <div className="flex gap-4">
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  disabled={saving}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Lagre notat
+                  {saving ? "Lagrer..." : "Lagre notat"}
                 </button>
                 <Link
                   href="/notes"

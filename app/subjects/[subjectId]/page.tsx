@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import Oversikt from "@/components/subjects/Oversikt";
@@ -12,22 +13,18 @@ import { daysUntil } from "@/utils/date";
 
 const IS_PRO_FEATURE = true;
 
-interface SubjectDetailPageProps {
-  params: {
-    subjectId: string;
-  };
-}
+export default function SubjectDetailPage() {
+  const params = useParams();
+  const subjectId = (params as { subjectId?: string })?.subjectId;
 
-export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   const { user } = useAuth();
-  const subjectId = params.subjectId;
 
   const hydrationStatus = useAppStore((state) => state.hydrationStatus);
   const appError = useAppStore((state) => state.error);
 
   const subjects = useSubjectsStore((state) => state.subjects);
 
-  const plannerState = usePlannerStore((state) => state.dataBySubjectId[subjectId]);
+  const plannerState = usePlannerStore((state) => state.dataBySubjectId[subjectId ?? ""]);
   const loadPlanner = usePlannerStore((state) => state.loadForSubject);
 
   const registerWorkedToday = useStudyTrackerStore(
@@ -44,17 +41,17 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   );
 
   useEffect(() => {
-    // DEBUG: flytt denne loggeren inn her (inne i komponenten)
-    console.log("DEBUG: SubjectDetailPage", {
-      user,
-      subjectId,
+    const debugObj = {
+      userId: user?.id ?? null,
+      subjectId: subjectId ?? null,
       hydrationStatus,
-      subjectsLength: subjects?.length ?? 0,
+      subjectsLength: Array.isArray(subjects) ? subjects.length : null,
       subjectFound: !!subject,
-      plannerState,
-    });
+      plannerInitialized: plannerState?.initialized ?? null,
+    };
+    console.log("DEBUG: SubjectDetailPage", JSON.stringify(debugObj));
 
-    if (!user || hydrationStatus !== "ready" || !subject) return;
+    if (!user || hydrationStatus !== "ready" || !subject || !subjectId) return;
     void loadPlanner(subjectId, user.id);
   }, [user, subjectId, hydrationStatus, subjects, subject, plannerState, loadPlanner]);
 
@@ -115,7 +112,21 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Resten av rendringen... */}
+      {/* Midlertidig debug-UI (fjern etter feilsøking) */}
+      <div className="p-4 bg-yellow-50 text-sm text-black">
+        <pre>
+          {JSON.stringify({
+            userId: user?.id ?? null,
+            subjectId: subjectId ?? null,
+            hydrationStatus,
+            subjectsLength: Array.isArray(subjects) ? subjects.length : null,
+            subjectFound: !!subject,
+            plannerInitialized: plannerState?.initialized ?? null,
+            plannerLoading: plannerState?.loading ?? null,
+          }, null, 2)}
+        </pre>
+      </div>
+
       <Oversikt subject={subject} isPro={IS_PRO_FEATURE} />
     </div>
   );

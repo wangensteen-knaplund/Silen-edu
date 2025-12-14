@@ -53,3 +53,26 @@ export function getCurrentWeekRange(): { start: string; end: string } {
     end: sunday.toISOString().split("T")[0]
   };
 }
+
+/**
+ * Format "last worked" text based on date
+ * Returns Norwegian text: "i dag", "i går", "for X dager siden"
+ */
+export function formatLastWorked(dateString: string | undefined): string {
+  if (!dateString) {
+    return "Ikke jobbet med ennå";
+  }
+  
+  const days = daysUntil(dateString);
+  
+  if (days === 0) {
+    return "Sist jobbet: i dag";
+  } else if (days === -1) {
+    return "Sist jobbet: i går";
+  } else if (days < -1) {
+    return `Sist jobbet: for ${Math.abs(days)} dager siden`;
+  } else {
+    // Future date - shouldn't happen, but handle gracefully
+    return "Ikke jobbet med ennå";
+  }
+}

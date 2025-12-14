@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
 import { useNotesStore } from "@/store/useNotesStore";
@@ -11,6 +11,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 export default function NewNotePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const hydrationStatus = useAppStore((state) => state.hydrationStatus);
   const appError = useAppStore((state) => state.error);
@@ -31,6 +32,18 @@ export default function NewNotePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Set initial subjectId from query parameter
+  useEffect(() => {
+    const querySubjectId = searchParams.get("subjectId");
+    if (querySubjectId && subjectsInitialized) {
+      // Verify the subject exists before setting it
+      const subjectExists = subjects.some((s) => s.id === querySubjectId);
+      if (subjectExists) {
+        setSubjectId(querySubjectId);
+      }
+    }
+  }, [searchParams, subjectsInitialized, subjects]);
 
   const errorMessage = appError || subjectsError || notesError;
 

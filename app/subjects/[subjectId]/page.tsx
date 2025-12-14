@@ -1,3 +1,14 @@
+useEffect(() => {
+  console.log("DEBUG: SubjectDetailPage", {
+    user,
+    subjectId,
+    hydrationStatus,
+    subjectsLength: subjects?.length,
+    subjectFound: !!subject,
+    plannerState,
+  });
+}, [user, subjectId, hydrationStatus, subjects, subject, plannerState]);
+
 "use client";
 
 import { useEffect, useMemo } from "react";

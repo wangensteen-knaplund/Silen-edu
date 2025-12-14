@@ -63,7 +63,8 @@ export function formatLastWorked(dateString: string | undefined): string {
     return "Ikke jobbet med ennå";
   }
   
-  const days = daysUntil(dateString);
+  // dateString is guaranteed to be a string here
+  const days = daysUntil(dateString as string);
   
   if (days === 0) {
     return "Sist jobbet: i dag";

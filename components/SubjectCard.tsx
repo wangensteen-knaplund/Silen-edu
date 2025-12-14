@@ -38,7 +38,8 @@ export default function SubjectCard({
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only navigate if not clicking on the button
-    if ((e.target as HTMLElement).closest("button")) {
+    const target = e.target as HTMLElement;
+    if (target?.closest && target.closest("button")) {
       return;
     }
     router.push(`/subjects/${id}`);

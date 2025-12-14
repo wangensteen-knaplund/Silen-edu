@@ -1,3 +1,5 @@
+"use client";
+
 useEffect(() => {
   console.log("DEBUG: SubjectDetailPage", {
     user,
@@ -8,8 +10,6 @@ useEffect(() => {
     plannerState,
   });
 }, [user, subjectId, hydrationStatus, subjects, subject, plannerState]);
-
-"use client";
 
 import { useEffect, useMemo } from "react";
 import Link from "next/link";

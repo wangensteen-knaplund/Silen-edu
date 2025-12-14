@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import MainNav from "@/components/layout/MainNav";
 import AuthProvider from "@/components/AuthProvider";
-import SubjectsInitializer from "@/components/subjects/SubjectsInitializer";
+import AppInitializer from "@/components/AppInitializer";
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <AuthProvider>
-      <SubjectsInitializer />
+      <AppInitializer />
       <MainNav />
       <main>{children}</main>
     </AuthProvider>

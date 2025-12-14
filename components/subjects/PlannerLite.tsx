@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { daysUntil, formatDateNO } from "@/utils/date";
-import { usePlannerStore } from "@/store/usePlannerStore";
+import { useSubjectsStore } from "@/store/useSubjectsStore";
 
 interface PlannerLiteProps {
   subjectId: string;
@@ -10,29 +11,37 @@ interface PlannerLiteProps {
 }
 
 export default function PlannerLite({ subjectId, initialExamDate }: PlannerLiteProps) {
-  const plannerData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
-  const setExamDate = usePlannerStore((state) => state.setExamDate);
-  
+  const { user } = useAuth();
+  const getById = useSubjectsStore((state) => state.getById);
+  const updateSubject = useSubjectsStore((state) => state.updateSubject);
+  const subject = useMemo(() => getById(subjectId), [getById, subjectId]);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [tempExamDate, setTempExamDate] = useState("");
+  const [tempExamDate, setTempExamDate] = useState(initialExamDate || "");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // Initialize with data from store or initial prop
-    if (plannerData?.examDate) {
-      setTempExamDate(plannerData.examDate);
+    if (subject?.examDate) {
+      setTempExamDate(subject.examDate);
     } else if (initialExamDate) {
       setTempExamDate(initialExamDate);
     }
-  }, [plannerData?.examDate, initialExamDate]);
+  }, [subject?.examDate, initialExamDate]);
 
-  const examDate = plannerData?.examDate || initialExamDate || "";
+  const examDate = subject?.examDate || tempExamDate || "";
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
-  const handleSave = () => {
-    if (tempExamDate) {
-      setExamDate(subjectId, tempExamDate);
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateSubject(subjectId, { examDate: tempExamDate || undefined });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Kunne ikke lagre eksamensdato", error);
+    } finally {
+      setSaving(false);
     }
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -70,9 +79,10 @@ export default function PlannerLite({ subjectId, initialExamDate }: PlannerLiteP
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={saving}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70"
             >
-              Lagre
+              {saving ? "Lagrer..." : "Lagre"}
             </button>
             <button
               onClick={handleCancel}
@@ -108,7 +118,7 @@ export default function PlannerLite({ subjectId, initialExamDate }: PlannerLiteP
             </>
           ) : (
             <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-              Ingen eksamensdato satt. Klikk &quot;Rediger&quot; for å legge til.
+              Ingen eksamensdato satt. Klikk "Rediger" for å legge til.
             </p>
           )}
         </div>

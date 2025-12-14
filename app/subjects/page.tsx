@@ -1,23 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabaseClient";
 import SubjectCard from "@/components/SubjectCard";
+import { useAppStore } from "@/store/useAppStore";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
-import { Subject } from "@/types/data";
 
 export default function SubjectsPage() {
   const { user } = useAuth();
+  const hydrationStatus = useAppStore((state) => state.hydrationStatus);
+  const appError = useAppStore((state) => state.error);
+
   const subjects = useSubjectsStore((state) => state.subjects);
   const loading = useSubjectsStore((state) => state.loading);
   const initialized = useSubjectsStore((state) => state.initialized);
-  const addSubjectToStore = useSubjectsStore((state) => state.addSubject);
+  const subjectError = useSubjectsStore((state) => state.error);
+  const createSubject = useSubjectsStore((state) => state.createSubject);
+
   const notes = useNotesStore((state) => state.notes);
   const notesInitialized = useNotesStore((state) => state.initialized);
   const notesLoading = useNotesStore((state) => state.loading);
+  const notesError = useNotesStore((state) => state.error);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
@@ -39,40 +43,20 @@ export default function SubjectsPage() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .insert([
-          {
-            user_id: user.id,
-            name: newSubjectName.trim(),
-            semester: newSubjectSemester.trim() || null,
-            exam_date: newSubjectExamDate || null,
-          },
-        ])
-        .select()
-        .single();
+      const created = await createSubject({
+        userId: user.id,
+        name: newSubjectName.trim(),
+        semester: newSubjectSemester.trim() || undefined,
+        examDate: newSubjectExamDate || undefined,
+      });
 
-      if (error) {
-        console.error("Error adding subject:", error);
-        alert("Kunne ikke legge til fag. Prøv igjen.");
-        return;
-      }
-
-      if (data) {
-        const newSubject: Subject = {
-          id: data.id,
-          userId: data.user_id,
-          name: data.name,
-          semester: data.semester ?? undefined,
-          examDate: data.exam_date ?? undefined,
-          createdAt: data.created_at,
-        };
-        addSubjectToStore(newSubject);
-
+      if (created) {
         setNewSubjectName("");
         setNewSubjectSemester("");
         setNewSubjectExamDate("");
         setShowAddForm(false);
+      } else {
+        alert("Kunne ikke legge til fag. Prøv igjen.");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -87,10 +71,13 @@ export default function SubjectsPage() {
   }
 
   const isLoading =
+    hydrationStatus !== "ready" ||
     loading ||
     notesLoading ||
     !initialized ||
     !notesInitialized;
+
+  const errorMessage = appError || subjectError || notesError;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -174,6 +161,12 @@ export default function SubjectsPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200">
+              {errorMessage}
             </div>
           )}
 

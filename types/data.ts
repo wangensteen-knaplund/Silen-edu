@@ -11,8 +11,12 @@ export interface Note {
   id: string;
   userId: string;
   subjectId: string;
+  title: string;
   content: string;
+  isPublic: boolean;
+  publicId: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tag {

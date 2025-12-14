@@ -41,16 +41,6 @@ export default function SubjectDetailPage() {
   );
 
   useEffect(() => {
-    const debugObj = {
-      userId: user?.id ?? null,
-      subjectId: subjectId ?? null,
-      hydrationStatus,
-      subjectsLength: Array.isArray(subjects) ? subjects.length : null,
-      subjectFound: !!subject,
-      plannerInitialized: plannerState?.initialized ?? null,
-    };
-    console.log("DEBUG: SubjectDetailPage", JSON.stringify(debugObj));
-
     if (!user || hydrationStatus !== "ready" || !subject || !subjectId) return;
     void loadPlanner(subjectId, user.id);
   }, [user, subjectId, hydrationStatus, subjects, subject, plannerState, loadPlanner]);
@@ -112,21 +102,6 @@ export default function SubjectDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Midlertidig debug-UI (fjern etter feilsøking) */}
-      <div className="p-4 bg-yellow-50 text-sm text-black">
-        <pre>
-          {JSON.stringify({
-            userId: user?.id ?? null,
-            subjectId: subjectId ?? null,
-            hydrationStatus,
-            subjectsLength: Array.isArray(subjects) ? subjects.length : null,
-            subjectFound: !!subject,
-            plannerInitialized: plannerState?.initialized ?? null,
-            plannerLoading: plannerState?.loading ?? null,
-          }, null, 2)}
-        </pre>
-      </div>
-
       <Oversikt subject={subject} isPro={IS_PRO_FEATURE} />
     </div>
   );

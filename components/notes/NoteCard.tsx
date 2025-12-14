@@ -5,16 +5,20 @@ import { formatDateNO } from "@/utils/date";
 
 interface NoteCardProps {
   id: string;
+  title?: string;
   content: string;
   subjectName?: string;
   createdAt: string;
 }
 
-export default function NoteCard({ id, content, subjectName, createdAt }: NoteCardProps) {
-  const title = content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line.length > 0) || "Uten tittel";
+export default function NoteCard({ id, title: overrideTitle, content, subjectName, createdAt }: NoteCardProps) {
+  const title =
+    overrideTitle && overrideTitle.trim().length > 0
+      ? overrideTitle
+      : content
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .find((line) => line.length > 0) || "Uten tittel";
 
   return (
     <Link href={`/notes/${id}`}>

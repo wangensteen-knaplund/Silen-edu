@@ -1,34 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { daysUntil, formatDateNO } from "@/utils/date";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { Deadline, ReadingItem, Goal } from "@/types/planner";
-import { nanoid } from "nanoid";
+import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { Subject } from "@/types/data";
 
 interface OversiktProps {
-  subjectId: string;
-  initialExamDate?: string;
+  subject: Subject;
   isPro: boolean;
 }
 
-export default function Oversikt({ subjectId, initialExamDate, isPro }: OversiktProps) {
-  const plannerData = usePlannerStore((state) => state.plannerLiteBySubjectId[subjectId]);
-  const plannerProData = usePlannerStore((state) => state.plannerProBySubjectId[subjectId]);
-  const goals = usePlannerStore((state) => state.goalsBySubjectId[subjectId] || []);
-  
-  const setExamDate = usePlannerStore((state) => state.setExamDate);
-  const addGoal = usePlannerStore((state) => state.addGoal);
-  const removeGoal = usePlannerStore((state) => state.removeGoal);
-  const addDeadline = usePlannerStore((state) => state.addDeadline);
-  const removeDeadline = usePlannerStore((state) => state.removeDeadline);
-  const addReadingItemsFromText = usePlannerStore((state) => state.addReadingItemsFromText);
-  const toggleReadingItem = usePlannerStore((state) => state.toggleReadingItem);
-  const removeReadingItem = usePlannerStore((state) => state.removeReadingItem);
-  
+export default function Oversikt({ subject, isPro }: OversiktProps) {
+  const { user } = useAuth();
+  const plannerState = usePlannerStore(
+    (state) => state.dataBySubjectId[subject.id]
+  );
+  const addGoalAction = usePlannerStore((state) => state.addGoal);
+  const removeGoalAction = usePlannerStore((state) => state.removeGoal);
+  const addDeadlineAction = usePlannerStore((state) => state.addDeadline);
+  const removeDeadlineAction = usePlannerStore((state) => state.removeDeadline);
+  const addReadingItemsFromTextAction = usePlannerStore(
+    (state) => state.addReadingItemsFromText
+  );
+  const toggleReadingItemAction = usePlannerStore((state) => state.toggleReadingItem);
+  const removeReadingItemAction = usePlannerStore((state) => state.removeReadingItem);
+
+  const updateSubject = useSubjectsStore((state) => state.updateSubject);
+
+  const [localError, setLocalError] = useState<string | null>(null);
+
   // Exam date state
   const [isEditingExam, setIsEditingExam] = useState(false);
   const [tempExamDate, setTempExamDate] = useState("");
+  const [savingExam, setSavingExam] = useState(false);
 
   // Goals state
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -45,25 +51,30 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
   const [readingRawText, setReadingRawText] = useState("");
 
   useEffect(() => {
-    if (plannerData?.examDate) {
-      setTempExamDate(plannerData.examDate);
-    } else if (initialExamDate) {
-      setTempExamDate(initialExamDate);
-    }
-  }, [plannerData?.examDate, initialExamDate]);
+    setTempExamDate(subject.examDate || "");
+  }, [subject.examDate, subject.id]);
 
-  const examDate = plannerData?.examDate || initialExamDate || "";
+  const examDate = subject.examDate || "";
   const daysToExam = examDate ? daysUntil(examDate) : null;
-  const deadlines = plannerProData?.deadlines || [];
-  const readingItems = plannerProData?.readingItems || [];
+  const deadlines = plannerState?.deadlines || [];
+  const readingItems = plannerState?.readingItems || [];
+  const goals = plannerState?.goals || [];
   const completedCount = readingItems.filter((item) => item.completed).length;
   const totalCount = readingItems.length;
 
-  const handleSaveExam = () => {
-    if (tempExamDate) {
-      setExamDate(subjectId, tempExamDate);
+  const handleSaveExam = async () => {
+    if (!user) return;
+    setSavingExam(true);
+    setLocalError(null);
+    try {
+      await updateSubject(subject.id, { examDate: tempExamDate || undefined });
+      setIsEditingExam(false);
+    } catch (error) {
+      console.error("Failed to save exam date", error);
+      setLocalError("Kunne ikke lagre eksamensdato.");
+    } finally {
+      setSavingExam(false);
     }
-    setIsEditingExam(false);
   };
 
   const handleCancelExam = () => {
@@ -71,51 +82,65 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
     setIsEditingExam(false);
   };
 
-  const handleAddGoal = () => {
+  const handleAddGoal = async () => {
+    if (!user) return;
     if (!goalText.trim()) {
       alert("Vennligst skriv inn et mål");
       return;
     }
 
-    const newGoal: Goal = {
-      id: nanoid(),
-      subjectId,
-      text: goalText.trim(),
-    };
+    const newGoal = await addGoalAction(subject.id, user.id, goalText.trim());
+    if (!newGoal) {
+      setLocalError("Kunne ikke legge til mål.");
+      return;
+    }
 
-    addGoal(subjectId, newGoal);
     setGoalText("");
     setShowGoalForm(false);
   };
 
-  const handleAddDeadline = () => {
+  const handleAddDeadline = async () => {
+    if (!user) return;
     if (!deadlineTitle.trim() || !deadlineDueDate) {
       alert("Vennligst fyll ut tittel og dato");
       return;
     }
 
-    const newDeadline: Deadline = {
-      id: nanoid(),
-      subjectId,
+    const newDeadline = await addDeadlineAction(subject.id, user.id, {
       title: deadlineTitle.trim(),
       dueDate: deadlineDueDate,
       type: deadlineType,
-    };
+    });
 
-    addDeadline(subjectId, newDeadline);
+    if (!newDeadline) {
+      setLocalError("Kunne ikke legge til deadline.");
+      return;
+    }
+
     setDeadlineTitle("");
     setDeadlineDueDate("");
     setDeadlineType("innlevering");
     setShowDeadlineForm(false);
   };
 
-  const handleAddReadingItems = () => {
+  const handleAddReadingItems = async () => {
+    if (!user) return;
     if (!readingRawText.trim()) {
       alert("Vennligst lim inn pensum");
       return;
     }
 
-    addReadingItemsFromText(subjectId, readingRawText);
+    const added = await addReadingItemsFromTextAction(
+      subject.id,
+      user.id,
+      readingRawText
+    );
+
+    if (added.length === 0) {
+      setLocalError("Kunne ikke legge til pensum.");
+      return;
+    }
+
     setReadingRawText("");
     setShowReadingForm(false);
   };
@@ -134,6 +159,12 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
       <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
         Oversikt
       </h3>
+
+      {(localError || plannerState?.error) && (
+        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded border border-red-200">
+          {localError || plannerState?.error}
+        </div>
+      )}
 
       {/* A) EKSAMEN SECTION */}
       <div className="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
@@ -165,9 +196,10 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
             <div className="flex gap-2">
               <button
                 onClick={handleSaveExam}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={savingExam}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70"
               >
-                Lagre
+                {savingExam ? "Lagrer..." : "Lagre"}
               </button>
               <button
                 onClick={handleCancelExam}
@@ -203,7 +235,7 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
               </>
             ) : (
               <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                Ingen eksamensdato satt. Klikk &quot;Rediger&quot; for å legge til.
+                Ingen eksamensdato satt. Klikk "Rediger" for å legge til.
               </p>
             )}
           </div>
@@ -260,7 +292,7 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
               >
                 <p className="text-gray-900 dark:text-white">{goal.text}</p>
                 <button
-                  onClick={() => removeGoal(subjectId, goal.id)}
+                  onClick={() => user && removeGoalAction(subject.id, goal.id, user.id)}
                   className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm ml-2"
                 >
                   ✕
@@ -364,7 +396,7 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
                         {getDeadlineTypeLabel(deadline.type)}
                       </span>
                       <button
-                        onClick={() => removeDeadline(subjectId, deadline.id)}
+                        onClick={() => user && removeDeadlineAction(subject.id, deadline.id, user.id)}
                         className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
                       >
                         ✕
@@ -408,7 +440,7 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
                   value={readingRawText}
                   onChange={(e) => setReadingRawText(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Kapittel 1: Introduksjon&#10;Kapittel 2: Grunnleggende begreper&#10;Artikkel: Machine Learning Basics"
+                  placeholder={`Kapittel 1: Introduksjon\nKapittel 2: Grunnleggende begreper\nArtikkel: Machine Learning Basics`}
                   rows={5}
                 />
               </div>
@@ -446,14 +478,14 @@ export default function Oversikt({ subjectId, initialExamDate, isPro }: Oversikt
                   <input
                     type="checkbox"
                     checked={item.completed}
-                    onChange={() => toggleReadingItem(subjectId, item.id)}
+                    onChange={() => user && toggleReadingItemAction(subject.id, item.id, user.id)}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
                   <p className={`flex-1 text-sm text-gray-900 dark:text-white ${item.completed ? "line-through opacity-60" : ""}`}>
                     {item.text}
                   </p>
                   <button
-                    onClick={() => removeReadingItem(subjectId, item.id)}
+                    onClick={() => user && removeReadingItemAction(subject.id, item.id, user.id)}
                     className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
                   >
                     ✕

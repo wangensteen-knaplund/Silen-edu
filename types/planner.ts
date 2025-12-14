@@ -9,6 +9,7 @@ export interface Deadline {
   title: string;
   dueDate: string; // ISO date string
   type: "innlevering" | "prøve" | "prosjekt";
+  createdAt: string;
 }
 
 export interface ReadingItem {
@@ -16,6 +17,7 @@ export interface ReadingItem {
   subjectId: string;
   text: string;
   completed: boolean;
+  createdAt: string;
 }
 
 export interface PlannerProData {
@@ -29,4 +31,5 @@ export interface Goal {
   id: string;
   subjectId: string;
   text: string;
+  createdAt: string;
 }

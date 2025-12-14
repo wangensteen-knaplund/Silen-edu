@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import Oversikt from "@/components/subjects/Oversikt";
+import { useAppStore } from "@/store/useAppStore";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
@@ -21,17 +22,13 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
   const { user } = useAuth();
   const subjectId = params.subjectId;
 
-  const subjects = useSubjectsStore((state) => state.subjects);
-  const loading = useSubjectsStore((state) => state.loading);
-  const initialized = useSubjectsStore((state) => state.initialized);
-  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
-  const plannerLoading = usePlannerStore((state) => state.loading);
-  const plannerInitialized = usePlannerStore((state) => state.initialized);
-  const hydratePlanner = usePlannerStore((state) => state.hydrateFromSubjects);
+  const hydrationStatus = useAppStore((state) => state.hydrationStatus);
+  const appError = useAppStore((state) => state.error);
 
-  const plannerLiteData = usePlannerStore(
-    (state) => state.plannerLiteBySubjectId[subjectId]
-  );
+  const subjects = useSubjectsStore((state) => state.subjects);
+
+  const plannerState = usePlannerStore((state) => state.dataBySubjectId[subjectId]);
+  const loadPlanner = usePlannerStore((state) => state.loadForSubject);
 
   const registerWorkedToday = useStudyTrackerStore(
     (state) => state.registerWorkedToday
@@ -41,30 +38,39 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     registerWorkedToday();
   }, [registerWorkedToday]);
 
+  const subject = useMemo(
+    () => subjects.find((s) => s.id === subjectId),
+    [subjects, subjectId]
+  );
+
   useEffect(() => {
-    const ensureDataLoaded = async () => {
-      if (!user || initialized || loading) return;
-
-      const loadedSubjects = await loadSubjects(user.id);
-      hydratePlanner(loadedSubjects);
-    };
-
-    void ensureDataLoaded();
-  }, [
-    user,
-    initialized,
-    loading,
-    loadSubjects,
-    hydratePlanner,
-  ]);
+    if (!user || hydrationStatus !== "ready" || !subject) return;
+    void loadPlanner(subjectId, user.id);
+  }, [user, hydrationStatus, subjectId, subject, loadPlanner]);
 
   if (!user) {
     return null;
   }
 
+  if (appError) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto py-12 text-center">
+          <p className="text-red-700 bg-red-100 inline-block px-4 py-2 rounded">
+            {appError}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const plannerLoading = plannerState?.loading;
+  const plannerInitialized = plannerState?.initialized;
+  const plannerError = plannerState?.error;
+
   const isLoading =
-    loading ||
-    !initialized ||
+    hydrationStatus !== "ready" ||
+    !subject ||
     plannerLoading ||
     !plannerInitialized;
 
@@ -77,11 +83,6 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
       </div>
     );
   }
-
-  const subject = useMemo(
-    () => subjects.find((s) => s.id === subjectId),
-    [subjects, subjectId]
-  );
 
   if (!subject) {
     return (
@@ -99,7 +100,7 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
     );
   }
 
-  const examDate = subject.examDate || plannerLiteData?.examDate;
+  const examDate = subject.examDate;
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
   return (
@@ -129,12 +130,14 @@ export default function SubjectDetailPage({ params }: SubjectDetailPageProps) {
             )}
           </div>
 
+          {plannerError && (
+            <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200">
+              {plannerError}
+            </div>
+          )}
+
           <div className="mb-6">
-            <Oversikt
-              subjectId={subjectId}
-              initialExamDate={examDate}
-              isPro={IS_PRO_FEATURE}
-            />
+            <Oversikt subject={subject} isPro={IS_PRO_FEATURE} />
           </div>
 
           <div className="flex gap-4 mb-6">

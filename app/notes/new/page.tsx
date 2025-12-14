@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
+import { useAppStore } from "@/store/useAppStore";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
@@ -12,22 +12,27 @@ import { useAuth } from "@/components/AuthProvider";
 export default function NewNotePage() {
   const router = useRouter();
   const { user } = useAuth();
+  const hydrationStatus = useAppStore((state) => state.hydrationStatus);
+  const appError = useAppStore((state) => state.error);
+
   const subjects = useSubjectsStore((state) => state.subjects);
   const subjectsInitialized = useSubjectsStore((state) => state.initialized);
   const subjectsLoading = useSubjectsStore((state) => state.loading);
-  const loadSubjects = useSubjectsStore((state) => state.loadSubjects);
-  const addNote = useNotesStore((state) => state.addNote);
-  const registerNoteEdited = useStudyTrackerStore((state) => state.registerNoteEdited);
+  const subjectsError = useSubjectsStore((state) => state.error);
+
+  const createNote = useNotesStore((state) => state.createNote);
+  const notesError = useNotesStore((state) => state.error);
+
+  const registerNoteEdited = useStudyTrackerStore(
+    (state) => state.registerNoteEdited
+  );
 
   const [subjectId, setSubjectId] = useState("");
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!user || subjectsInitialized || subjectsLoading) return;
-
-    loadSubjects(user.id);
-  }, [user, subjectsInitialized, subjectsLoading, loadSubjects]);
+  const errorMessage = appError || subjectsError || notesError;
 
   const handleSave = async () => {
     if (!user) {
@@ -36,6 +41,7 @@ export default function NewNotePage() {
     }
 
     const trimmedContent = content.trim();
+    const trimmedTitle = title.trim();
 
     if (!subjectId || !trimmedContent) {
       alert("Vennligst fyll ut fag og innhold");
@@ -45,33 +51,18 @@ export default function NewNotePage() {
     setSaving(true);
 
     try {
-      const { data, error } = await supabase
-        .from("notes")
-        .insert([
-          {
-            user_id: user.id,
-            subject_id: subjectId,
-            content: trimmedContent,
-          },
-        ])
-        .select()
-        .single();
+      const newNote = await createNote({
+        userId: user.id,
+        subjectId,
+        title: trimmedTitle || "Uten tittel",
+        content: trimmedContent,
+      });
 
-      if (error || !data) {
-        console.error("Error saving note:", error);
+      if (!newNote) {
         alert("Kunne ikke lagre notatet. Prøv igjen.");
         return;
       }
 
-      const newNote = {
-        id: data.id,
-        userId: data.user_id,
-        subjectId: data.subject_id,
-        content: data.content,
-        createdAt: data.created_at,
-      };
-
-      addNote(newNote);
       registerNoteEdited();
       router.push(`/notes?subjectId=${subjectId}`);
     } catch (err) {
@@ -86,10 +77,18 @@ export default function NewNotePage() {
     return null;
   }
 
-  if (!subjectsInitialized) {
+  if (hydrationStatus !== "ready" || subjectsLoading || !subjectsInitialized) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <p className="text-gray-600 dark:text-gray-400">Laster fag…</p>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <p className="text-red-700 bg-red-100 px-4 py-2 rounded">{errorMessage}</p>
       </div>
     );
   }
@@ -130,6 +129,21 @@ export default function NewNotePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Tittel (valgfritt)
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="F.eks. Forelesning 1-notater"
+                  disabled={saving}
+                />
               </div>
 
               {/* Content */}

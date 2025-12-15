@@ -181,9 +181,9 @@ export default function SubjectsPage() {
                     id={subject.id}
                     name={subject.name}
                     examDate={subject.examDate}
-                    readingItemsTotal={0}
-                    readingItemsCompleted={0}
-                    lastWorkedDate={undefined}
+                    curriculumTotal={0}
+                    curriculumCompleted={0}
+                    lastActivityDate={undefined}
                   />
                 );
               })}

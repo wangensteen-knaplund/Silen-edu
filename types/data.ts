@@ -15,6 +15,7 @@ export interface Note {
   content: string;
   isPublic: boolean;
   publicId: string | null;
+  curriculumItemId?: string | null; // Optional link to curriculum item
   createdAt: string;
   updatedAt: string;
 }
@@ -27,4 +28,21 @@ export interface Tag {
 export interface NoteTag {
   noteId: string;
   tagId: string;
+}
+
+export interface CurriculumItem {
+  id: string;
+  userId: string;
+  subjectId: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+}
+
+export interface StudyActivity {
+  id: string;
+  userId: string;
+  subjectId: string;
+  eventType: 'note_created' | 'note_updated' | 'curriculum_toggled';
+  createdAt: string;
 }

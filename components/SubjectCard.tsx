@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { daysUntil, formatLastWorked } from "@/utils/date";
 
@@ -8,26 +7,26 @@ interface SubjectCardProps {
   id: string;
   name: string;
   examDate?: string;
-  readingItemsTotal: number;
-  readingItemsCompleted: number;
-  lastWorkedDate?: string;
+  curriculumTotal: number;
+  curriculumCompleted: number;
+  lastActivityDate?: string;
 }
 
 export default function SubjectCard({
   id,
   name,
   examDate,
-  readingItemsTotal,
-  readingItemsCompleted,
-  lastWorkedDate,
+  curriculumTotal,
+  curriculumCompleted,
+  lastActivityDate,
 }: SubjectCardProps) {
   const router = useRouter();
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
   // Calculate progress percentage
   const progressPercent =
-    readingItemsTotal > 0
-      ? Math.round((readingItemsCompleted / readingItemsTotal) * 100)
+    curriculumTotal > 0
+      ? Math.round((curriculumCompleted / curriculumTotal) * 100)
       : 0;
 
   const handleQuickNote = (e: React.MouseEvent) => {
@@ -75,7 +74,7 @@ export default function SubjectCard({
       )}
 
       {/* Curriculum Progress */}
-      {readingItemsTotal === 0 ? (
+      {curriculumTotal === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
           Ingen pensum lagt til enda
         </p>
@@ -84,7 +83,7 @@ export default function SubjectCard({
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
             <span>Pensum</span>
             <span>
-              {readingItemsCompleted === 0 && readingItemsTotal > 0
+              {curriculumCompleted === 0 && curriculumTotal > 0
                 ? "Ikke startet"
                 : `${progressPercent} %`}
             </span>
@@ -98,9 +97,9 @@ export default function SubjectCard({
         </div>
       )}
 
-      {/* Last Worked */}
+      {/* Last Studied */}
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        {formatLastWorked(lastWorkedDate)}
+        {formatLastWorked(lastActivityDate)}
       </p>
     </div>
   );

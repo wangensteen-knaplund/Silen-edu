@@ -5,71 +5,72 @@ import { useEffect, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import SubjectCard from "@/components/SubjectCard";
-import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
-import { usePlannerStore } from "@/store/usePlannerStore";
+import { useCurriculumStore } from "@/store/useCurriculumStore";
+import { useStudyActivityStore } from "@/store/useStudyActivityStore";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const subjects = useSubjectsStore((state) => state.subjects);
   const subjectsInitialized = useSubjectsStore((state) => state.initialized);
   const subjectsLoading = useSubjectsStore((state) => state.loading);
-  const notes = useNotesStore((state) => state.notes);
-  const notesInitialized = useNotesStore((state) => state.initialized);
-  const notesLoading = useNotesStore((state) => state.loading);
-  const plannerData = usePlannerStore((state) => state.dataBySubjectId);
-  const loadForSubject = usePlannerStore((state) => state.loadForSubject);
+  
+  const curriculumData = useCurriculumStore((state) => state.dataBySubjectId);
+  const loadCurriculumForSubject = useCurriculumStore((state) => state.loadForSubject);
+  
+  const lastActivityBySubject = useStudyActivityStore((state) => state.lastActivityBySubject);
+  const loadLastActivityForAllSubjects = useStudyActivityStore(
+    (state) => state.loadLastActivityForAllSubjects
+  );
 
-  // Load planner data for all subjects
+  // Load curriculum data for all subjects
   useEffect(() => {
     if (!user || !subjectsInitialized || subjects.length === 0) return;
 
     subjects.forEach((subject) => {
-      const existing = plannerData[subject.id];
+      const existing = curriculumData[subject.id];
       if (!existing?.initialized && !existing?.loading) {
-        loadForSubject(subject.id, user.id).catch((err) => {
-          console.error(`Error loading planner for subject ${subject.id}:`, err);
+        loadCurriculumForSubject(subject.id, user.id).catch((err) => {
+          console.error(`Error loading curriculum for subject ${subject.id}:`, err);
         });
       }
     });
-  }, [user, subjects, subjectsInitialized, plannerData, loadForSubject]);
+  }, [user, subjects, subjectsInitialized, curriculumData, loadCurriculumForSubject]);
+
+  // Load study activity for all subjects
+  useEffect(() => {
+    if (!user || !subjectsInitialized || subjects.length === 0) return;
+    
+    const subjectIds = subjects.map((s) => s.id);
+    loadLastActivityForAllSubjects(user.id, subjectIds).catch((err) => {
+      console.error("Error loading study activities:", err);
+    });
+  }, [user, subjects, subjectsInitialized, loadLastActivityForAllSubjects]);
 
   // Calculate data for each subject card
   const subjectCardsData = useMemo(() => {
     return subjects.map((subject) => {
-      // Get reading items for this subject
-      const plannerState = plannerData[subject.id];
-      const readingItems = plannerState?.readingItems || [];
-      const readingItemsTotal = readingItems.length;
-      const readingItemsCompleted = readingItems.filter(
+      // Get curriculum items for this subject
+      const curriculumState = curriculumData[subject.id];
+      const curriculumItems = curriculumState?.items || [];
+      const curriculumTotal = curriculumItems.length;
+      const curriculumCompleted = curriculumItems.filter(
         (item) => item.completed
       ).length;
 
-      // Find last worked date from notes
-      const subjectNotes = notes.filter(
-        (note) => note.subjectId === subject.id
-      );
-      const lastWorkedDate =
-        subjectNotes.length > 0
-          ? subjectNotes.reduce((latest, note) => {
-              const noteDate = new Date(note.updatedAt || note.createdAt);
-              const latestDate = latest ? new Date(latest) : new Date(0);
-              return noteDate > latestDate
-                ? note.updatedAt || note.createdAt
-                : latest;
-            }, "" as string)
-          : undefined;
+      // Get last activity date
+      const lastActivityDate = lastActivityBySubject[subject.id];
 
       return {
         subject,
-        readingItemsTotal,
-        readingItemsCompleted,
-        lastWorkedDate: lastWorkedDate
-          ? lastWorkedDate.split("T")[0]
+        curriculumTotal,
+        curriculumCompleted,
+        lastActivityDate: lastActivityDate
+          ? lastActivityDate.split("T")[0]
           : undefined,
       };
     });
-  }, [subjects, plannerData, notes]);
+  }, [subjects, curriculumData, lastActivityBySubject]);
 
   if (!user) {
     return null; // AuthProvider will redirect
@@ -77,9 +78,7 @@ export default function DashboardPage() {
 
   const isLoading =
     subjectsLoading ||
-    !subjectsInitialized ||
-    notesLoading ||
-    !notesInitialized;
+    !subjectsInitialized;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -120,18 +119,18 @@ export default function DashboardPage() {
               {subjectCardsData.map(
                 ({
                   subject,
-                  readingItemsTotal,
-                  readingItemsCompleted,
-                  lastWorkedDate,
+                  curriculumTotal,
+                  curriculumCompleted,
+                  lastActivityDate,
                 }) => (
                   <SubjectCard
                     key={subject.id}
                     id={subject.id}
                     name={subject.name}
                     examDate={subject.examDate}
-                    readingItemsTotal={readingItemsTotal}
-                    readingItemsCompleted={readingItemsCompleted}
-                    lastWorkedDate={lastWorkedDate}
+                    curriculumTotal={curriculumTotal}
+                    curriculumCompleted={curriculumCompleted}
+                    lastActivityDate={lastActivityDate}
                   />
                 )
               )}

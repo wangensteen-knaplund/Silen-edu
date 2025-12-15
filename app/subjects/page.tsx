@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import SubjectCard from "@/components/SubjectCard";
 import { useAppStore } from "@/store/useAppStore";
-import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 
 export default function SubjectsPage() {
@@ -17,11 +16,6 @@ export default function SubjectsPage() {
   const initialized = useSubjectsStore((state) => state.initialized);
   const subjectError = useSubjectsStore((state) => state.error);
   const createSubject = useSubjectsStore((state) => state.createSubject);
-
-  const notes = useNotesStore((state) => state.notes);
-  const notesInitialized = useNotesStore((state) => state.initialized);
-  const notesLoading = useNotesStore((state) => state.loading);
-  const notesError = useNotesStore((state) => state.error);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
@@ -73,11 +67,9 @@ export default function SubjectsPage() {
   const isLoading =
     hydrationStatus !== "ready" ||
     loading ||
-    notesLoading ||
-    !initialized ||
-    !notesInitialized;
+    !initialized;
 
-  const errorMessage = appError || subjectError || notesError;
+  const errorMessage = appError || subjectError;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -183,17 +175,15 @@ export default function SubjectsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {subjects.map((subject) => {
-                const noteCount = notesInitialized
-                  ? notes.filter((note) => note.subjectId === subject.id).length
-                  : 0;
-
                 return (
                   <SubjectCard
                     key={subject.id}
                     id={subject.id}
                     name={subject.name}
                     examDate={subject.examDate}
-                    noteCount={noteCount}
+                    readingItemsTotal={0}
+                    readingItemsCompleted={0}
+                    lastWorkedDate={undefined}
                   />
                 );
               })}

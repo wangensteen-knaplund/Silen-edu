@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import SubjectCard from "@/components/SubjectCard";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { usePlannerStore } from "@/store/usePlannerStore";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -15,6 +17,59 @@ export default function DashboardPage() {
   const notes = useNotesStore((state) => state.notes);
   const notesInitialized = useNotesStore((state) => state.initialized);
   const notesLoading = useNotesStore((state) => state.loading);
+  const plannerData = usePlannerStore((state) => state.dataBySubjectId);
+  const loadForSubject = usePlannerStore((state) => state.loadForSubject);
+
+  // Load planner data for all subjects
+  useEffect(() => {
+    if (!user || !subjectsInitialized || subjects.length === 0) return;
+
+    subjects.forEach((subject) => {
+      const existing = plannerData[subject.id];
+      if (!existing?.initialized && !existing?.loading) {
+        loadForSubject(subject.id, user.id).catch((err) => {
+          console.error(`Error loading planner for subject ${subject.id}:`, err);
+        });
+      }
+    });
+  }, [user, subjects, subjectsInitialized, plannerData, loadForSubject]);
+
+  // Calculate data for each subject card
+  const subjectCardsData = useMemo(() => {
+    return subjects.map((subject) => {
+      // Get reading items for this subject
+      const plannerState = plannerData[subject.id];
+      const readingItems = plannerState?.readingItems || [];
+      const readingItemsTotal = readingItems.length;
+      const readingItemsCompleted = readingItems.filter(
+        (item) => item.completed
+      ).length;
+
+      // Find last worked date from notes
+      const subjectNotes = notes.filter(
+        (note) => note.subjectId === subject.id
+      );
+      const lastWorkedDate =
+        subjectNotes.length > 0
+          ? subjectNotes.reduce((latest, note) => {
+              const noteDate = new Date(note.updatedAt || note.createdAt);
+              const latestDate = latest ? new Date(latest) : new Date(0);
+              return noteDate > latestDate
+                ? note.updatedAt || note.createdAt
+                : latest;
+            }, "" as string)
+          : undefined;
+
+      return {
+        subject,
+        readingItemsTotal,
+        readingItemsCompleted,
+        lastWorkedDate: lastWorkedDate
+          ? lastWorkedDate.split("T")[0]
+          : undefined,
+      };
+    });
+  }, [subjects, plannerData, notes]);
 
   if (!user) {
     return null; // AuthProvider will redirect
@@ -62,21 +117,24 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subjects.map((subject) => {
-                const noteCount = notesInitialized
-                  ? notes.filter((note) => note.subjectId === subject.id).length
-                  : 0;
-
-                return (
+              {subjectCardsData.map(
+                ({
+                  subject,
+                  readingItemsTotal,
+                  readingItemsCompleted,
+                  lastWorkedDate,
+                }) => (
                   <SubjectCard
                     key={subject.id}
                     id={subject.id}
                     name={subject.name}
-                    noteCount={noteCount}
                     examDate={subject.examDate}
+                    readingItemsTotal={readingItemsTotal}
+                    readingItemsCompleted={readingItemsCompleted}
+                    lastWorkedDate={lastWorkedDate}
                   />
-                );
-              })}
+                )
+              )}
             </div>
           )}
         </div>

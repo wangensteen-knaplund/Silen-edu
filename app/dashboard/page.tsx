@@ -50,21 +50,21 @@ export default function DashboardPage() {
   // Calculate data for each subject card
   const subjectCardsData = useMemo(() => {
     return subjects.map((subject) => {
-      // Get curriculum items for this subject
+      // Get curriculum items for this subject with defensive checks
       const curriculumState = curriculumData[subject.id];
       const curriculumItems = curriculumState?.items || [];
       const curriculumTotal = curriculumItems.length;
       const curriculumCompleted = curriculumItems.filter(
-        (item) => item.completed
+        (item) => item?.completed
       ).length;
 
-      // Get last activity date
+      // Get last activity date with defensive check
       const lastActivityDate = lastActivityBySubject[subject.id];
 
       return {
         subject,
-        curriculumTotal,
-        curriculumCompleted,
+        curriculumTotal: curriculumTotal || 0,
+        curriculumCompleted: curriculumCompleted || 0,
         lastActivityDate: lastActivityDate
           ? lastActivityDate.split("T")[0]
           : undefined,

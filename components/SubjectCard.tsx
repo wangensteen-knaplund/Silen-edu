@@ -23,10 +23,12 @@ export default function SubjectCard({
   const router = useRouter();
   const daysToExam = examDate ? daysUntil(examDate) : null;
 
-  // Calculate progress percentage
+  // Calculate progress percentage with defensive checks
+  const safeTotal = typeof curriculumTotal === 'number' && !isNaN(curriculumTotal) ? curriculumTotal : 0;
+  const safeCompleted = typeof curriculumCompleted === 'number' && !isNaN(curriculumCompleted) ? curriculumCompleted : 0;
   const progressPercent =
-    curriculumTotal > 0
-      ? Math.round((curriculumCompleted / curriculumTotal) * 100)
+    safeTotal > 0
+      ? Math.round((safeCompleted / safeTotal) * 100)
       : 0;
 
   const handleQuickNote = (e: React.MouseEvent) => {
@@ -74,7 +76,7 @@ export default function SubjectCard({
       )}
 
       {/* Curriculum Progress */}
-      {curriculumTotal === 0 ? (
+      {safeTotal === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
           Ingen pensum lagt til enda
         </p>
@@ -83,7 +85,7 @@ export default function SubjectCard({
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
             <span>Pensum</span>
             <span>
-              {curriculumCompleted === 0 && curriculumTotal > 0
+              {safeCompleted === 0 && safeTotal > 0
                 ? "Ikke startet"
                 : `${progressPercent} %`}
             </span>

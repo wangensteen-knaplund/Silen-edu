@@ -22,15 +22,18 @@ export default function SubjectsPage() {
   const [newSubjectSemester, setNewSubjectSemester] = useState("");
   const [newSubjectExamDate, setNewSubjectExamDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleAddSubject = async () => {
+    setCreateError(null);
+
     if (!newSubjectName.trim()) {
-      alert("Vennligst skriv inn et fagnavn");
+      setCreateError("Vennligst skriv inn et fagnavn");
       return;
     }
 
     if (!user) {
-      alert("Du må være innlogget for å legge til fag");
+      setCreateError("Du må være innlogget for å legge til fag");
       return;
     }
 
@@ -49,13 +52,15 @@ export default function SubjectsPage() {
         setNewSubjectSemester("");
         setNewSubjectExamDate("");
         setShowAddForm(false);
+        setCreateError(null);
       } else {
-        alert("Kunne ikke legge til fag. Prøv igjen.");
+        setCreateError("Kunne ikke legge til fag. Prøv igjen.");
       }
-    } catch (error) {
+    } catch (error: any) {
+      // keep error message user-friendly, but log full error for devs
       // eslint-disable-next-line no-console
-      console.error("Error:", error);
-      alert("Kunne ikke legge til fag. Prøv igjen.");
+      console.error("Error creating subject:", error);
+      setCreateError(error?.message ?? "Kunne ikke legge til fag. Prøv igjen.");
     } finally {
       setIsSubmitting(false);
     }
@@ -65,8 +70,12 @@ export default function SubjectsPage() {
     return null; // AuthProvider will redirect
   }
 
-  const isLoading = hydrationStatus !== "ready" || loading || !initialized;
-  const errorMessage = appError || subjectError;
+  // Interpret hydrationStatus safely
+  const isHydrating = hydrationStatus !== "ready" && hydrationStatus !== "error";
+  const isLoading = isHydrating || loading || !initialized;
+
+  // Consolidated error message (store-level + local create error)
+  const errorMessage = createError ?? appError ?? subjectError ?? (hydrationStatus === "error" ? "Problemer ved initiering" : null);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -75,7 +84,10 @@ export default function SubjectsPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Mine fag</h1>
             <button
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => {
+                setShowAddForm(!showAddForm);
+                setCreateError(null);
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
             >
               {showAddForm ? "Avbryt" : "+ Nytt fag"}
@@ -85,93 +97,13 @@ export default function SubjectsPage() {
           {showAddForm && (
             <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Legg til nytt fag</h2>
+
+              {createError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-800 rounded border border-red-200">
+                  {String(createError)}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fagnavn *</label>
-                  <input
-                    type="text"
-                    value={newSubjectName}
-                    onChange={(e) => setNewSubjectName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="F.eks. Matematikk 1"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Semester (valgfritt)</label>
-                  <input
-                    type="text"
-                    value={newSubjectSemester}
-                    onChange={(e) => setNewSubjectSemester(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="F.eks. Høst 2024"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Eksamensdato (valgfritt)</label>
-                  <input
-                    type="date"
-                    value={newSubjectExamDate}
-                    onChange={(e) => setNewSubjectExamDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleAddSubject}
-                    disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
-                  >
-                    {isSubmitting ? "Legger til..." : "Legg til fag"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddForm(false);
-                      setNewSubjectName("");
-                      setNewSubjectSemester("");
-                      setNewSubjectExamDate("");
-                    }}
-                    disabled={isSubmitting}
-                    className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 disabled:cursor-not-allowed"
-                  >
-                    Avbryt
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {errorMessage && <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200">{String(errorMessage)}</div>}
-
-          {isLoading ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-              <p className="text-gray-600 dark:text-gray-400">Laster...</p>
-            </div>
-          ) : subjects.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-              <p className="text-gray-600 dark:text-gray-400">Du har ingen fag ennå. Fag vil bli lagt til her.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subjects.map((subject) => {
-                return (
-                  <SubjectCard
-                    key={String(subject.id)}
-                    id={String(subject.id)}
-                    name={String(subject.name ?? "Uten navn")}
-                    examDate={typeof subject.examDate === "string" ? subject.examDate : undefined}
-                    curriculumTotal={Number(subject.curriculumTotal ?? 0)}
-                    curriculumCompleted={Number(subject.curriculumCompleted ?? 0)}
-                    lastActivityDate={typeof subject.lastActivityDate === "string" ? subject.lastActivityDate : null}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fagnavn

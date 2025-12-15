@@ -38,7 +38,7 @@ export default function Oversikt({ subject, isPro }: OversiktProps) {
   const removeCurriculumItem = useCurriculumStore((state) => state.removeItem);
   
   // Study activity store
-  const recordActivity = useStudyActivityStore((state) => state.recordActivity);
+  const trackStudyActivity = useStudyActivityStore((state) => state.trackStudyActivity);
 
   const updateSubject = useSubjectsStore((state) => state.updateSubject);
 
@@ -172,8 +172,8 @@ export default function Oversikt({ subject, isPro }: OversiktProps) {
     
     const updated = await toggleCurriculumItem(subject.id, itemId, user.id);
     if (updated) {
-      // Record study activity when curriculum item is toggled
-      await recordActivity(user.id, subject.id, 'curriculum_toggled');
+      // Track study activity when curriculum item is marked completed (fire and forget)
+      trackStudyActivity(user.id, subject.id, 'curriculum');
     }
   };
 

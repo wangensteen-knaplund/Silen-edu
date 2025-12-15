@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuizStore } from "@/store/useQuizStore";
 import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
+import { useStudyActivityStore } from "@/store/useStudyActivityStore";
 
 export default function QuizSessionPage() {
   const params = useParams();
@@ -14,6 +15,7 @@ export default function QuizSessionPage() {
   const getSessionById = useQuizStore((state) => state.getSessionById);
   const session = getSessionById(sessionId);
   const registerQuizTaken = useStudyTrackerStore((state) => state.registerQuizTaken);
+  const trackStudyActivity = useStudyActivityStore((state) => state.trackStudyActivity);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -56,11 +58,13 @@ export default function QuizSessionPage() {
 
     if (isLastQuestion) {
       setShowResult(true);
-      // Register quiz completion only once
-      if (!quizCompleted) {
-        registerQuizTaken();
+      // Track quiz completion (fire and forget - never blocks user flow)
+      if (!quizCompleted && session.userId && session.subjectId) {
+        trackStudyActivity(session.userId, session.subjectId, 'quiz');
         setQuizCompleted(true);
       }
+      // Also register for local study tracker (for weekly heatmap if used)
+      registerQuizTaken();
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);

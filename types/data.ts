@@ -43,6 +43,7 @@ export interface StudyActivity {
   id: string;
   userId: string;
   subjectId: string;
-  eventType: 'note_created' | 'note_updated' | 'curriculum_toggled';
-  createdAt: string;
+  activityType: 'note' | 'curriculum' | 'quiz';
+  activityDate: string; // ISO date string (YYYY-MM-DD)
+  createdAt: string; // ISO timestamp
 }

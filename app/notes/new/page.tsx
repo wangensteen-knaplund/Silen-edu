@@ -24,7 +24,7 @@ export default function NewNotePage() {
   const createNote = useNotesStore((state) => state.createNote);
   const notesError = useNotesStore((state) => state.error);
 
-  const recordActivity = useStudyActivityStore((state) => state.recordActivity);
+  const trackStudyActivity = useStudyActivityStore((state) => state.trackStudyActivity);
 
   const [subjectId, setSubjectId] = useState("");
   const [curriculumItemId, setCurriculumItemId] = useState<string | null>(null);
@@ -82,8 +82,8 @@ export default function NewNotePage() {
         return;
       }
 
-      // Record study activity for note creation
-      await recordActivity(user.id, subjectId, 'note_created');
+      // Track study activity for note creation (fire and forget - never blocks user flow)
+      trackStudyActivity(user.id, subjectId, 'note');
       
       router.push(`/notes?subjectId=${subjectId}`);
     } catch (err) {

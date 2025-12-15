@@ -8,11 +8,11 @@ interface StudyActivityStore {
   // Track most recent activity per subject for quick access
   lastActivityBySubject: Record<string, string>; // subjectId -> ISO timestamp
   
-  recordActivity: (
+  trackStudyActivity: (
     userId: string,
     subjectId: string,
-    eventType: 'note_created' | 'note_updated' | 'curriculum_toggled'
-  ) => Promise<StudyActivity | null>;
+    activityType: 'note' | 'curriculum' | 'quiz'
+  ) => Promise<void>;
   
   loadLastActivityForSubject: (
     userId: string,
@@ -28,47 +28,48 @@ interface StudyActivityStore {
 }
 
 export const useStudyActivityStore = create<StudyActivityStore>((set, get) => {
-  const recordActivity = async (
+  const trackStudyActivity = async (
     userId: string,
     subjectId: string,
-    eventType: 'note_created' | 'note_updated' | 'curriculum_toggled'
-  ): Promise<StudyActivity | null> => {
-    if (!userId || !subjectId) return null;
-
-    const { data, error } = await supabase
-      .from("study_activity")
-      .insert([
-        {
-          user_id: userId,
-          subject_id: subjectId,
-          event_type: eventType,
-        },
-      ])
-      .select("id, user_id, subject_id, event_type, created_at")
-      .single();
-
-    if (error || !data) {
-      console.error("Error recording study activity:", error);
-      return null;
+    activityType: 'note' | 'curriculum' | 'quiz'
+  ): Promise<void> => {
+    // Safety rule: silently do nothing if required params are missing
+    if (!userId || !subjectId) {
+      return;
     }
 
-    const activity: StudyActivity = {
-      id: data.id,
-      userId: data.user_id,
-      subjectId: data.subject_id,
-      eventType: data.event_type,
-      createdAt: data.created_at,
-    };
+    try {
+      const { data, error } = await supabase
+        .from("study_activity")
+        .insert([
+          {
+            user_id: userId,
+            subject_id: subjectId,
+            // Note: Database column is 'event_type' (for backward compatibility)
+            // but TypeScript interface exposes it as 'activityType'
+            event_type: activityType,
+          },
+        ])
+        .select("id, user_id, subject_id, event_type, activity_date, created_at")
+        .single();
 
-    // Update local cache
-    set((state) => ({
-      lastActivityBySubject: {
-        ...state.lastActivityBySubject,
-        [subjectId]: activity.createdAt,
-      },
-    }));
+      if (error || !data) {
+        // Never throw - just log and return
+        console.error("Error tracking study activity:", error);
+        return;
+      }
 
-    return activity;
+      // Update local cache for quick access
+      set((state) => ({
+        lastActivityBySubject: {
+          ...state.lastActivityBySubject,
+          [subjectId]: data.created_at,
+        },
+      }));
+    } catch (err) {
+      // Catch any unexpected errors and log them, but never throw
+      console.error("Unexpected error tracking study activity:", err);
+    }
   };
 
   const loadLastActivityForSubject = async (
@@ -148,7 +149,7 @@ export const useStudyActivityStore = create<StudyActivityStore>((set, get) => {
 
   return {
     lastActivityBySubject: {},
-    recordActivity,
+    trackStudyActivity,
     loadLastActivityForSubject,
     loadLastActivityForAllSubjects,
     reset: () => set({ lastActivityBySubject: {} }),

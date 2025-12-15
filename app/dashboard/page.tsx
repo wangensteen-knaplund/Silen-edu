@@ -31,6 +31,7 @@ export default function DashboardPage() {
       const existing = curriculumData[subject.id];
       if (!existing?.initialized && !existing?.loading) {
         loadCurriculumForSubject(subject.id, user.id).catch((err) => {
+          // eslint-disable-next-line no-console
           console.error(`Error loading curriculum for subject ${subject.id}:`, err);
         });
       }
@@ -41,33 +42,30 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user || !subjectsInitialized || subjects.length === 0) return;
     
-    const subjectIds = subjects.map((s) => s.id);
+    const subjectIds = subjects.map((s) => String(s.id));
     loadLastActivityForAllSubjects(user.id, subjectIds).catch((err) => {
+      // eslint-disable-next-line no-console
       console.error("Error loading study activities:", err);
     });
   }, [user, subjects, subjectsInitialized, loadLastActivityForAllSubjects]);
 
-  // Calculate data for each subject card
+  // Calculate data for each subject card (defensive)
   const subjectCardsData = useMemo(() => {
     return subjects.map((subject) => {
-      // Get curriculum items for this subject
       const curriculumState = curriculumData[subject.id];
-      const curriculumItems = curriculumState?.items || [];
+      const curriculumItems = Array.isArray(curriculumState?.items) ? curriculumState.items : [];
       const curriculumTotal = curriculumItems.length;
-      const curriculumCompleted = curriculumItems.filter(
-        (item) => item.completed
-      ).length;
+      const curriculumCompleted = curriculumItems.filter((item) => !!item?.completed).length;
 
-      // Get last activity date
-      const lastActivityDate = lastActivityBySubject[subject.id];
+      // Get last activity date safely
+      const rawLastActivity = lastActivityBySubject[subject.id];
+      const lastActivityDate = typeof rawLastActivity === "string" ? rawLastActivity.split("T")[0] : undefined;
 
       return {
         subject,
         curriculumTotal,
         curriculumCompleted,
-        lastActivityDate: lastActivityDate
-          ? lastActivityDate.split("T")[0]
-          : undefined,
+        lastActivityDate,
       };
     });
   }, [subjects, curriculumData, lastActivityBySubject]);
@@ -124,13 +122,13 @@ export default function DashboardPage() {
                   lastActivityDate,
                 }) => (
                   <SubjectCard
-                    key={subject.id}
-                    id={subject.id}
-                    name={subject.name}
-                    examDate={subject.examDate}
-                    curriculumTotal={curriculumTotal}
-                    curriculumCompleted={curriculumCompleted}
-                    lastActivityDate={lastActivityDate}
+                    key={String(subject.id)}
+                    id={String(subject.id)}
+                    name={String(subject.name ?? "Uten navn")}
+                    examDate={typeof subject.examDate === "string" ? subject.examDate : undefined}
+                    curriculumTotal={Number(curriculumTotal ?? 0)}
+                    curriculumCompleted={Number(curriculumCompleted ?? 0)}
+                    lastActivityDate={typeof lastActivityDate === "string" ? lastActivityDate : null}
                   />
                 )
               )}

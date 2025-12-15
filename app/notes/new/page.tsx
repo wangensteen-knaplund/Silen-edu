@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
 import { useNotesStore } from "@/store/useNotesStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
-import { useStudyTrackerStore } from "@/store/useStudyTrackerStore";
+import { useStudyActivityStore } from "@/store/useStudyActivityStore";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function NewNotePage() {
@@ -24,24 +24,29 @@ export default function NewNotePage() {
   const createNote = useNotesStore((state) => state.createNote);
   const notesError = useNotesStore((state) => state.error);
 
-  const registerNoteEdited = useStudyTrackerStore(
-    (state) => state.registerNoteEdited
-  );
+  const recordActivity = useStudyActivityStore((state) => state.recordActivity);
 
   const [subjectId, setSubjectId] = useState("");
+  const [curriculumItemId, setCurriculumItemId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Set initial subjectId from query parameter
+  // Set initial subjectId and curriculumItemId from query parameters
   useEffect(() => {
     const querySubjectId = searchParams.get("subjectId");
+    const queryCurriculumItemId = searchParams.get("curriculumItemId");
+    
     if (querySubjectId && subjectsInitialized) {
       // Verify the subject exists before setting it
       const subjectExists = subjects.some((s) => s.id === querySubjectId);
       if (subjectExists) {
         setSubjectId(querySubjectId);
       }
+    }
+    
+    if (queryCurriculumItemId) {
+      setCurriculumItemId(queryCurriculumItemId);
     }
   }, [searchParams, subjectsInitialized, subjects]);
 
@@ -69,6 +74,7 @@ export default function NewNotePage() {
         subjectId,
         title: trimmedTitle || "Uten tittel",
         content: trimmedContent,
+        curriculumItemId,
       });
 
       if (!newNote) {
@@ -76,7 +82,9 @@ export default function NewNotePage() {
         return;
       }
 
-      registerNoteEdited();
+      // Record study activity for note creation
+      await recordActivity(user.id, subjectId, 'note_created');
+      
       router.push(`/notes?subjectId=${subjectId}`);
     } catch (err) {
       console.error("Unexpected error saving note:", err);

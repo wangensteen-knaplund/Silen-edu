@@ -14,7 +14,7 @@ interface NotesStore {
   getById: (noteId: string) => Note | undefined;
   getBySubject: (subjectId: string) => Note[];
   createNote: (
-    payload: Pick<Note, "title" | "content" | "subjectId"> & { userId: string; isPublic?: boolean }
+    payload: Pick<Note, "title" | "content" | "subjectId"> & { userId: string; isPublic?: boolean; curriculumItemId?: string | null }
   ) => Promise<Note | null>;
   updateNote: (
     id: string,
@@ -35,7 +35,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
     const { data, error } = await supabase
       .from("notes")
       .select(
-        "id, user_id, subject_id, title, content, is_public, public_id, created_at, updated_at"
+        "id, user_id, subject_id, title, content, is_public, public_id, curriculum_item_id, created_at, updated_at"
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -54,6 +54,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
       content: n.content,
       isPublic: n.is_public ?? false,
       publicId: n.public_id,
+      curriculumItemId: n.curriculum_item_id || null,
       createdAt: n.created_at,
       updatedAt: n.updated_at,
     }));
@@ -95,20 +96,21 @@ export const useNotesStore = create<NotesStore>((set, get) => {
     getBySubject: (subjectId) =>
       get().notes.filter((note) => note.subjectId === subjectId),
 
-    createNote: async ({ userId, title, content, subjectId, isPublic }) => {
+    createNote: async ({ userId, title, content, subjectId, isPublic, curriculumItemId }) => {
       const payload = {
         user_id: userId,
         subject_id: subjectId,
         title: title?.trim() || "Uten tittel",
         content: content.trim(),
         is_public: Boolean(isPublic),
+        curriculum_item_id: curriculumItemId || null,
       };
 
       const { data, error } = await supabase
         .from("notes")
         .insert([payload])
         .select(
-          "id, user_id, subject_id, title, content, is_public, public_id, created_at, updated_at"
+          "id, user_id, subject_id, title, content, is_public, public_id, curriculum_item_id, created_at, updated_at"
         )
         .single();
 
@@ -126,6 +128,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
         content: data.content,
         isPublic: data.is_public ?? false,
         publicId: data.public_id,
+        curriculumItemId: data.curriculum_item_id || null,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
@@ -152,7 +155,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
         .eq("id", id)
         .eq("user_id", userId)
         .select(
-          "id, user_id, subject_id, title, content, is_public, public_id, created_at, updated_at"
+          "id, user_id, subject_id, title, content, is_public, public_id, curriculum_item_id, created_at, updated_at"
         )
         .single();
 
@@ -170,6 +173,7 @@ export const useNotesStore = create<NotesStore>((set, get) => {
         content: data.content,
         isPublic: data.is_public ?? false,
         publicId: data.public_id,
+        curriculumItemId: data.curriculum_item_id || null,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };

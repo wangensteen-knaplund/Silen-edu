@@ -56,13 +56,25 @@ CREATE POLICY "Users can create their own study activity" ON study_activity
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- 8. Migration path for existing reading_items data
--- If you have existing reading_items with text/completed fields (not title/progress),
--- you can migrate them to curriculum_items:
+-- IMPORTANT: There is a discrepancy in the existing codebase:
+--   - The supabase-setup.sql schema defines reading_items with 'title' and 'progress' fields
+--   - The usePlannerStore.ts code queries for 'text' and 'completed' fields
+--
+-- This new curriculum_items table resolves this by explicitly using 'title' and 'completed'.
+--
+-- If your database somehow has reading_items with 'text' and 'completed' fields, migrate:
 -- 
 -- INSERT INTO curriculum_items (user_id, subject_id, title, completed, created_at)
 -- SELECT user_id, subject_id, text as title, completed, created_at
 -- FROM reading_items
--- WHERE text IS NOT NULL;
+-- WHERE text IS NOT NULL AND completed IS NOT NULL;
 --
--- NOTE: Only run the above if your reading_items table has text/completed fields
--- The current schema shows title/progress, so this migration may not be needed
+-- If your reading_items follows the schema (title/progress), you can convert:
+--
+-- INSERT INTO curriculum_items (user_id, subject_id, title, completed, created_at)
+-- SELECT user_id, subject_id, title, (progress = 100) as completed, created_at
+-- FROM reading_items
+-- WHERE title IS NOT NULL;
+--
+-- Note: Only run ONE of the above migrations based on your actual table structure.
+-- Check your reading_items columns first: SELECT * FROM reading_items LIMIT 1;

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import SubjectCard from "@/components/SubjectCard";
 import { useAppStore } from "@/store/useAppStore";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
+import { useCurriculumStore } from "@/store/useCurriculumStore";
+import { useStudyActivityStore } from "@/store/useStudyActivityStore";
 
 export default function SubjectsPage() {
   const { user } = useAuth();
@@ -17,6 +19,13 @@ export default function SubjectsPage() {
   const subjectError = useSubjectsStore((state) => state.error);
   const createSubject = useSubjectsStore((state) => state.createSubject);
 
+  // Curriculum & study activity stores
+  const curriculumData = useCurriculumStore((state) => state.dataBySubjectId);
+  const loadCurriculumForSubject = useCurriculumStore((state) => state.loadForSubject);
+
+  const lastActivityBySubject = useStudyActivityStore((state) => state.lastActivityBySubject);
+  const loadLastActivityForAllSubjects = useStudyActivityStore((state) => state.loadLastActivityForAllSubjects);
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectSemester, setNewSubjectSemester] = useState("");
@@ -24,6 +33,7 @@ export default function SubjectsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // Create subject handler
   const handleAddSubject = async () => {
     setCreateError(null);
 
@@ -57,7 +67,6 @@ export default function SubjectsPage() {
         setCreateError("Kunne ikke legge til fag. Prøv igjen.");
       }
     } catch (error: any) {
-      // keep error message user-friendly, but log full error for devs
       // eslint-disable-next-line no-console
       console.error("Error creating subject:", error);
       setCreateError(error?.message ?? "Kunne ikke legge til fag. Prøv igjen.");
@@ -76,6 +85,53 @@ export default function SubjectsPage() {
 
   // Consolidated error message (store-level + local create error)
   const errorMessage = createError ?? appError ?? subjectError ?? (hydrationStatus === "error" ? "Problemer ved initiering" : null);
+
+  // Load curriculum for each subject (if missing) — same pattern as Dashboard
+  useEffect(() => {
+    if (!user || !initialized || subjects.length === 0) return;
+
+    subjects.forEach((subject) => {
+      const existing = curriculumData[subject.id];
+      if (!existing?.initialized && !existing?.loading) {
+        loadCurriculumForSubject(subject.id, user.id).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error(`Error loading curriculum for subject ${subject.id}:`, err);
+        });
+      }
+    });
+  }, [user, subjects, initialized, curriculumData, loadCurriculumForSubject]);
+
+  // Load last activity for all subjects (bulk)
+  useEffect(() => {
+    if (!user || !initialized || subjects.length === 0) return;
+
+    const subjectIds = subjects.map((s) => String(s.id));
+    loadLastActivityForAllSubjects(user.id, subjectIds).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error("Error loading study activities:", err);
+    });
+  }, [user, subjects, initialized, loadLastActivityForAllSubjects]);
+
+  // Compute derived data per subject defensively
+  const subjectCardsData = useMemo(() => {
+    return subjects.map((subject) => {
+      const curriculumState = curriculumData[subject.id];
+      const curriculumItems = Array.isArray(curriculumState?.items) ? curriculumState.items : [];
+      const curriculumTotal = curriculumItems.length;
+      const curriculumCompleted = curriculumItems.filter((item) => !!item?.completed).length;
+
+      // Get last activity date safely — only split if string
+      const rawLastActivity = lastActivityBySubject[subject.id];
+      const lastActivityDate = typeof rawLastActivity === "string" ? rawLastActivity.split("T")[0] : undefined;
+
+      return {
+        subject,
+        curriculumTotal,
+        curriculumCompleted,
+        lastActivityDate,
+      };
+    });
+  }, [subjects, curriculumData, lastActivityBySubject]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -179,19 +235,19 @@ export default function SubjectsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subjects.map((subject) => {
-                return (
+              {subjectCardsData.map(
+                ({ subject, curriculumTotal, curriculumCompleted, lastActivityDate }) => (
                   <SubjectCard
                     key={String(subject.id)}
                     id={String(subject.id)}
                     name={String(subject.name ?? "Uten navn")}
                     examDate={typeof (subject as any).examDate === "string" ? (subject as any).examDate : undefined}
-                    curriculumTotal={0}
-                    curriculumCompleted={0}
-                    lastActivityDate={null}
+                    curriculumTotal={Number(curriculumTotal ?? 0)}
+                    curriculumCompleted={Number(curriculumCompleted ?? 0)}
+                    lastActivityDate={typeof lastActivityDate === "string" ? lastActivityDate : null}
                   />
-                );
-              })}
+                )
+              )}
             </div>
           )}
         </div>

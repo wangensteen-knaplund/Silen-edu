@@ -58,13 +58,14 @@ export default function QuizSessionPage() {
 
     if (isLastQuestion) {
       setShowResult(true);
-      // Track quiz completion (fire and forget - never blocks user flow)
+      // Track quiz completion only once (fire and forget - never blocks user flow)
       if (!quizCompleted && session.userId && session.subjectId) {
+        // Database tracking for analytics
         trackStudyActivity(session.userId, session.subjectId, 'quiz');
+        // Local store tracking for in-app features (e.g., weekly heatmap)
+        registerQuizTaken();
         setQuizCompleted(true);
       }
-      // Also register for local study tracker (for weekly heatmap if used)
-      registerQuizTaken();
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);

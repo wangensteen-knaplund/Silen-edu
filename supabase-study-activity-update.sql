@@ -15,8 +15,9 @@ ON study_activity(user_id, subject_id, activity_date);
 ALTER TABLE study_activity DROP CONSTRAINT IF EXISTS study_activity_event_type_check;
 
 -- Add new constraint with updated values: "note", "curriculum", "quiz"
+-- Note: The column is named 'event_type' for backward compatibility
 ALTER TABLE study_activity 
-ADD CONSTRAINT study_activity_activity_type_check 
+ADD CONSTRAINT study_activity_event_type_check 
 CHECK (event_type IN ('note', 'curriculum', 'quiz'));
 
 -- Note: This migration assumes you want to keep the column name as 'event_type' 

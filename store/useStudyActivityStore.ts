@@ -45,7 +45,9 @@ export const useStudyActivityStore = create<StudyActivityStore>((set, get) => {
           {
             user_id: userId,
             subject_id: subjectId,
-            event_type: activityType, // using event_type column name for backward compatibility
+            // Note: Database column is 'event_type' (for backward compatibility)
+            // but TypeScript interface exposes it as 'activityType'
+            event_type: activityType,
           },
         ])
         .select("id, user_id, subject_id, event_type, activity_date, created_at")

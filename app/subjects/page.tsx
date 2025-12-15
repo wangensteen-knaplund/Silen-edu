@@ -186,8 +186,8 @@ export default function SubjectsPage() {
                     id={String(subject.id)}
                     name={String(subject.name ?? "Uten navn")}
                     examDate={typeof subject.examDate === "string" ? subject.examDate : undefined}
-                    curriculumTotal={Number(subject.curriculumTotal ?? 0)}
-                    curriculumCompleted={Number(subject.curriculumCompleted ?? 0)}
+                    curriculumTotal={0}
+                    curriculumCompleted={0}
                     lastActivityDate={typeof subject.lastActivityDate === "string" ? subject.lastActivityDate : null}
                   />
                 );

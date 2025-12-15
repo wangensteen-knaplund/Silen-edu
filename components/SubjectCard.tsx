@@ -5,7 +5,7 @@ import { daysUntil, formatLastWorked } from "@/utils/date";
 
 interface SubjectCardProps {
   id: string;
-  name: string;
+  name?: string | null;
   examDate?: string | null;
   curriculumTotal?: number | null;
   curriculumCompleted?: number | null;
@@ -14,7 +14,7 @@ interface SubjectCardProps {
 
 export default function SubjectCard({
   id,
-  name,
+  name = "Uten navn",
   examDate = null,
   curriculumTotal = 0,
   curriculumCompleted = 0,
@@ -22,45 +22,44 @@ export default function SubjectCard({
 }: SubjectCardProps) {
   const router = useRouter();
 
-  // Defensive parsing of numbers to avoid NaN / negative or non-number values
+  // Defensive coercion for numeric values
   const safeTotal = Math.max(0, Number(curriculumTotal) || 0);
   const safeCompleted = Math.max(0, Number(curriculumCompleted) || 0);
 
-  // Calculate progress percentage safely
-  const rawPercent =
-    safeTotal > 0 ? Math.round((safeCompleted / safeTotal) * 100) : 0;
-  const progressPercent = Number.isFinite(rawPercent)
-    ? Math.min(100, Math.max(0, rawPercent))
-    : 0;
+  // Compute progress safely (clamped)
+  const rawPercent = safeTotal > 0 ? Math.round((safeCompleted / safeTotal) * 100) : 0;
+  const progressPercent = Number.isFinite(rawPercent) ? Math.min(100, Math.max(0, rawPercent)) : 0;
 
-  // Compute days to exam defensively
+  // Compute days to exam defensively — only call daysUntil with a string and catch exceptions
   let daysToExam: number | null = null;
-  if (examDate) {
+  if (typeof examDate === "string" && examDate.trim() !== "") {
     try {
       const d = daysUntil(examDate);
       daysToExam = typeof d === "number" && !Number.isNaN(d) ? d : null;
-    } catch {
+    } catch (err) {
       daysToExam = null;
+      // Useful for debugging in dev
+      // eslint-disable-next-line no-console
+      console.error("daysUntil parsing error for examDate=", examDate, err);
     }
   }
 
   const handleQuickNote = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    router.push(`/notes/new?subjectId=${encodeURIComponent(id)}`);
+    router.push(`/notes/new?subjectId=${encodeURIComponent(String(id))}`);
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Only navigate if not clicking on the button
     const target = e.target as HTMLElement | null;
     if (target?.closest && target.closest("button")) {
       return;
     }
-    router.push(`/subjects/${id}`);
+    router.push(`/subjects/${String(id)}`);
   };
 
   const lastStudiedText =
-    lastActivityDate && typeof lastActivityDate === "string"
+    typeof lastActivityDate === "string" && lastActivityDate.trim() !== ""
       ? formatLastWorked(lastActivityDate)
       : "Ingen aktivitet";
 
@@ -77,7 +76,7 @@ export default function SubjectCard({
         <button
           onClick={handleQuickNote}
           className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          aria-label={`Legg til notat for ${name}`}
+          aria-label={`Legg til notat for ${String(name ?? "fag")}`}
         >
           + Notat
         </button>
@@ -96,16 +95,12 @@ export default function SubjectCard({
 
       {/* Curriculum Progress */}
       {safeTotal === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          Ingen pensum lagt til enda
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Ingen pensum lagt til enda</p>
       ) : (
         <div className="mb-2">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
             <span>Pensum</span>
-            <span>
-              {safeCompleted === 0 && safeTotal > 0 ? "Ikke startet" : `${progressPercent} %`}
-            </span>
+            <span>{safeCompleted === 0 && safeTotal > 0 ? "Ikke startet" : `${progressPercent} %`}</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
@@ -121,9 +116,7 @@ export default function SubjectCard({
       )}
 
       {/* Last Studied */}
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        Sist jobbet: {lastStudiedText}
-      </p>
+      <p className="text-sm text-gray-600 dark:text-gray-400">Sist jobbet: {String(lastStudiedText)}</p>
     </div>
   );
 }

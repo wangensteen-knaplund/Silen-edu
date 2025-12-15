@@ -53,6 +53,7 @@ export default function SubjectsPage() {
         alert("Kunne ikke legge til fag. Prøv igjen.");
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Error:", error);
       alert("Kunne ikke legge til fag. Prøv igjen.");
     } finally {
@@ -64,11 +65,7 @@ export default function SubjectsPage() {
     return null; // AuthProvider will redirect
   }
 
-  const isLoading =
-    hydrationStatus !== "ready" ||
-    loading ||
-    !initialized;
-
+  const isLoading = hydrationStatus !== "ready" || loading || !initialized;
   const errorMessage = appError || subjectError;
 
   return (
@@ -76,9 +73,7 @@ export default function SubjectsPage() {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Mine fag
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Mine fag</h1>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -89,14 +84,10 @@ export default function SubjectsPage() {
 
           {showAddForm && (
             <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Legg til nytt fag
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Legg til nytt fag</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                    Fagnavn *
-                  </label>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fagnavn *</label>
                   <input
                     type="text"
                     value={newSubjectName}
@@ -107,9 +98,7 @@ export default function SubjectsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                    Semester (valgfritt)
-                  </label>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Semester (valgfritt)</label>
                   <input
                     type="text"
                     value={newSubjectSemester}
@@ -120,9 +109,7 @@ export default function SubjectsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                    Eksamensdato (valgfritt)
-                  </label>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Eksamensdato (valgfritt)</label>
                   <input
                     type="date"
                     value={newSubjectExamDate}
@@ -156,11 +143,7 @@ export default function SubjectsPage() {
             </div>
           )}
 
-          {errorMessage && (
-            <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200">
-              {errorMessage}
-            </div>
-          )}
+          {errorMessage && <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200">{String(errorMessage)}</div>}
 
           {isLoading ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
@@ -168,22 +151,20 @@ export default function SubjectsPage() {
             </div>
           ) : subjects.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-              <p className="text-gray-600 dark:text-gray-400">
-                Du har ingen fag ennå. Fag vil bli lagt til her.
-              </p>
+              <p className="text-gray-600 dark:text-gray-400">Du har ingen fag ennå. Fag vil bli lagt til her.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {subjects.map((subject) => {
                 return (
                   <SubjectCard
-                    key={subject.id}
-                    id={subject.id}
-                    name={subject.name}
-                    examDate={subject.examDate}
-                    curriculumTotal={0}
-                    curriculumCompleted={0}
-                    lastActivityDate={undefined}
+                    key={String(subject.id)}
+                    id={String(subject.id)}
+                    name={String(subject.name ?? "Uten navn")}
+                    examDate={typeof subject.examDate === "string" ? subject.examDate : undefined}
+                    curriculumTotal={Number(subject.curriculumTotal ?? 0)}
+                    curriculumCompleted={Number(subject.curriculumCompleted ?? 0)}
+                    lastActivityDate={typeof subject.lastActivityDate === "string" ? subject.lastActivityDate : null}
                   />
                 );
               })}

@@ -4,6 +4,12 @@
 export function daysUntil(dateString: string): number {
   const targetDate = new Date(dateString);
   const today = new Date();
+  
+  // Return 0 if date is invalid
+  if (isNaN(targetDate.getTime())) {
+    return 0;
+  }
+  
   today.setHours(0, 0, 0, 0);
   targetDate.setHours(0, 0, 0, 0);
   
@@ -18,6 +24,12 @@ export function daysUntil(dateString: string): number {
  */
 export function formatDateNO(dateString: string): string {
   const date = new Date(dateString);
+  
+  // Return empty string if date is invalid
+  if (isNaN(date.getTime())) {
+    return "";
+  }
+  
   return date.toLocaleDateString("no-NO", {
     day: "numeric",
     month: "long",

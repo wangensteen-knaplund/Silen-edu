@@ -41,7 +41,7 @@ export function mapActivityToHeatmap(
     const activity = activityData.find(a => a.activity_date === dateStr);
     
     // Simple intensity logic: 0 = no activity, 1+ = active day
-    const intensity = activity && activity.activity_count > 0 ? 1 : 0;
+    const intensity = (activity?.activity_count ?? 0) > 0 ? 1 : 0;
     intensities.push(intensity);
   }
   

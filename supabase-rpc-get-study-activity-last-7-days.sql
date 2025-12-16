@@ -19,6 +19,7 @@ AS $$
     COUNT(*) as activity_count
   FROM study_activity
   WHERE user_id = p_user_id
+    -- Get last 7 days: today + previous 6 days = 7 days total
     AND activity_date >= CURRENT_DATE - INTERVAL '6 days'
     AND activity_date <= CURRENT_DATE
   GROUP BY activity_date

@@ -36,7 +36,8 @@ export function mapActivityToHeatmap(
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    // Format date in YYYY-MM-DD using Swedish locale (returns ISO format)
+    // Format date in YYYY-MM-DD using Swedish locale (reliably produces ISO format)
+    // This avoids timezone issues that occur with toISOString()
     const dateStr = date.toLocaleDateString('sv-SE');
     
     // Find activity for this date

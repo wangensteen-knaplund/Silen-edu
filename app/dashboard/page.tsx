@@ -29,7 +29,7 @@ export default function DashboardPage() {
   );
 
   // State for heatmap data (7 days initialized to no activity)
-  const [heatmapIntensities, setHeatmapIntensities] = useState<number[]>(Array(7).fill(0));
+  const [heatmapIntensities, setHeatmapIntensities] = useState<number[]>(() => Array(7).fill(0));
 
   // Load curriculum data for all subjects
   useEffect(() => {

@@ -1,5 +1,9 @@
 -- Create RPC function to get study activity for the last 7 days
 -- This function returns aggregated activity counts per date for a given user
+--
+-- PREREQUISITES:
+-- This function requires the activity_date column to exist in the study_activity table.
+-- Run supabase-study-activity-update.sql first if you haven't already.
 
 CREATE OR REPLACE FUNCTION get_study_activity_last_7_days(p_user_id UUID)
 RETURNS TABLE (

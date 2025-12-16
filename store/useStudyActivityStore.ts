@@ -24,6 +24,10 @@ interface StudyActivityStore {
     subjectIds: string[]
   ) => Promise<Record<string, string>>;
   
+  getStudyActivityLast7Days: (
+    userId: string
+  ) => Promise<{ activity_date: string; activity_count: number }[]>;
+  
   reset: () => void;
 }
 
@@ -147,11 +151,33 @@ export const useStudyActivityStore = create<StudyActivityStore>((set, get) => {
     return result;
   };
 
+  const getStudyActivityLast7Days = async (
+    userId: string
+  ): Promise<{ activity_date: string; activity_count: number }[]> => {
+    if (!userId) return [];
+
+    try {
+      const { data, error } = await supabase
+        .rpc('get_study_activity_last_7_days', { p_user_id: userId });
+
+      if (error) {
+        console.error("Error fetching last 7 days activity:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (err) {
+      console.error("Unexpected error fetching last 7 days activity:", err);
+      return [];
+    }
+  };
+
   return {
     lastActivityBySubject: {},
     trackStudyActivity,
     loadLastActivityForSubject,
     loadLastActivityForAllSubjects,
+    getStudyActivityLast7Days,
     reset: () => set({ lastActivityBySubject: {} }),
   };
 });

@@ -11,7 +11,8 @@ RETURNS TABLE (
   activity_count BIGINT
 ) 
 LANGUAGE sql
-SECURITY DEFINER
+SECURITY DEFINER  -- Uses definer's privileges to bypass RLS for aggregation queries
+SET search_path = public
 AS $$
   SELECT 
     activity_date,

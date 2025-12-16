@@ -18,7 +18,12 @@ export function getHeatmapColor(intensity: number): string {
 /**
  * Map activity data to 7-day rolling heatmap intensities
  * Returns array of 7 intensities for the last 7 days (today - 6 days to today)
- * 0 = no activity, 1+ = active day
+ * 
+ * Note: Uses simple binary intensity (0 or 1) for MVP as specified in requirements.
+ * The existing getHeatmapColor supports 0-4 intensity levels for future enhancements.
+ * 
+ * @param activityData Array of activity records with date and count
+ * @returns Array of 7 intensities: 0 = no activity, 1 = active day (1+ activities)
  */
 export function mapActivityToHeatmap(
   activityData: { activity_date: string; activity_count: number }[]
@@ -31,11 +36,8 @@ export function mapActivityToHeatmap(
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    // Format date in YYYY-MM-DD using local timezone
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
+    // Format date in YYYY-MM-DD using Swedish locale (returns ISO format)
+    const dateStr = date.toLocaleDateString('sv-SE');
     
     // Find activity for this date
     const activity = activityData.find(a => a.activity_date === dateStr);

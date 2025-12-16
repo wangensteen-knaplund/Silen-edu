@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import SubjectCard from "@/components/SubjectCard";
+import StudyHeatmapStrip from "@/components/dashboard/StudyHeatmapStrip";
 import { useSubjectsStore } from "@/store/useSubjectsStore";
 import { useCurriculumStore } from "@/store/useCurriculumStore";
 import { useStudyActivityStore } from "@/store/useStudyActivityStore";
+import { mapActivityToHeatmap } from "@/utils/heatmap";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -22,6 +24,12 @@ export default function DashboardPage() {
   const loadLastActivityForAllSubjects = useStudyActivityStore(
     (state) => state.loadLastActivityForAllSubjects
   );
+  const getStudyActivityLast7Days = useStudyActivityStore(
+    (state) => state.getStudyActivityLast7Days
+  );
+
+  // State for heatmap data
+  const [heatmapIntensities, setHeatmapIntensities] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
 
   // Load curriculum data for all subjects
   useEffect(() => {
@@ -48,6 +56,21 @@ export default function DashboardPage() {
       console.error("Error loading study activities:", err);
     });
   }, [user, subjects, subjectsInitialized, loadLastActivityForAllSubjects]);
+
+  // Load heatmap data for last 7 days
+  useEffect(() => {
+    if (!user) return;
+    
+    getStudyActivityLast7Days(user.id)
+      .then((activityData) => {
+        const intensities = mapActivityToHeatmap(activityData);
+        setHeatmapIntensities(intensities);
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Error loading heatmap data:", err);
+      });
+  }, [user, getStudyActivityLast7Days]);
 
   // Calculate data for each subject card (defensive)
   const subjectCardsData = useMemo(() => {
@@ -93,6 +116,14 @@ export default function DashboardPage() {
             >
               + Nytt fag
             </Link>
+          </div>
+
+          {/* Heatmap showing last 7 days of study activity */}
+          <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              Siste 7 dager
+            </h2>
+            <StudyHeatmapStrip intensities={heatmapIntensities} />
           </div>
 
           {isLoading ? (

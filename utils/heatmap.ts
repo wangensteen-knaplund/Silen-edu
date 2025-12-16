@@ -14,3 +14,32 @@ export function getHeatmapColor(intensity: number): string {
   const clampedIntensity = Math.max(0, Math.min(4, intensity));
   return colors[clampedIntensity];
 }
+
+/**
+ * Map activity data to 7-day rolling heatmap intensities
+ * Returns array of 7 intensities for the last 7 days (today - 6 days to today)
+ * 0 = no activity, 1+ = active day
+ */
+export function mapActivityToHeatmap(
+  activityData: { activity_date: string; activity_count: number }[]
+): number[] {
+  // Create array for last 7 days
+  const intensities: number[] = [];
+  const today = new Date();
+  
+  // Generate last 7 days (today - 6 to today)
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    // Find activity for this date
+    const activity = activityData.find(a => a.activity_date === dateStr);
+    
+    // Simple intensity logic: 0 = no activity, 1+ = active day
+    const intensity = activity && activity.activity_count > 0 ? 1 : 0;
+    intensities.push(intensity);
+  }
+  
+  return intensities;
+}
